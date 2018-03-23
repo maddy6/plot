@@ -20,3 +20,33 @@ https://cs.stanford.edu/people/karpathy/
 [‎16-‎03-‎2018 16:09] Mohanraj Vengadachalam: 
 http://cs231n.stanford.edu/ 
 
+
+
+Video Recording
+
+https://github.com/vijayvee/video-captioning
+
+https://github.com/brianhuang1019/Video-Cap
+
+https://github.com/preritj/show_attend_tell
+
+https://github.com/vijayvee/video-captioning
+
+https://github.com/zhegan27/SCN_for_video_captioning
+
+https://github.com/apple2373/chainer_caption_generation
+
+https://github.com/brianhuang1019/Video-Cap
+
+https://github.com/rohit-gupta/Video2Language
+
+https://github.com/ZubairHussain/Video-Paragraph-Captioning---Keras
+
+https://github.com/dongyp13/video-caption
+
+https://github.com/loscheris/VideoCaptioning_att
+
+https://github.com/xiadingZ/video-caption.pytorch
+
+https://github.com/lvapeab/ABiViRNet
+
