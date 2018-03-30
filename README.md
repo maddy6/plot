@@ -50,3 +50,66 @@ https://github.com/xiadingZ/video-caption.pytorch
 
 https://github.com/lvapeab/ABiViRNet
 
+
+
+s = """The Threat dashboard contains the following dashlets:
+• Total Compromised
+"""
+ans = s.find('Adapter')
+print(ans)
+#if ans<0:
+#    ans = "Index Not Found"
+#print(ans)
+
+
+import docx2txt
+import re
+#my_text = docx2txt.process("C:/Users/Mayur.v/Documents/test word.docx")
+my_text = docx2txt.process("C:/Users/Mayur.v/Documents/Cisco_chapter1.docx")
+#my_text = my_text.readline()
+test = my_text
+#test = my_text[1500:3000]
+test = test.strip()
+new_string = ''
+for line in test.split('\n'):
+        if line.strip():
+                new_string += line + '\n'
+#print old_string,
+#print(new_string)
+
+### Remove Special Characters from string
+#new_string = re.sub('[^A-Za-z0-9]+', '', new_string)
+#new_string = new_string.split()
+#new_string = new_string.split(" ")
+#new_string = "\n".join(new_string)
+#with open("C:/Users/Mayur.v/Documents/hello3.txt") as f:
+#new_string = " ".join(new_string.strip() for line in new_string)
+#new_string = list(new_string)
+new_string = re.sub("\n" , " ", new_string)
+new_string1 = re.sub("\s\s+" , " ", new_string)
+print(new_string1)
+print(type(new_string1))
+
+fh = open("C:/Users/Mayur.v/Documents/hello2.txt", "w") 
+fh.write(new_string1) 
+fh.close 
+### find the index of the Answer
+#ans = new_string.find('Wireless')
+#if ans<0:
+#    ans = "Index Not Found"
+#print(ans)
+
+#test1 = filter(lambda x: not re.match(r'^\s*$', x), test)
+#lines = test.split()
+#lines = [line for line in test if line.strip()]
+#sentences = re.split(r' *[\.\?!]*', test)
+#cleaned = "\n".join(test)
+#cleaned = "\n".join(test.split())
+#test = '\n'.join(test)
+#print(cleaned)
+#print(test.find('Overview'))
+#print(lines)
+
+
+
+
