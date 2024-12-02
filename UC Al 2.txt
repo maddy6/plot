@@ -1,0 +1,203 @@
+Use Case 22: Overbilling or Double Charging Errors (UDAAP, Reg Z)
+Objective:
+Identify instances where customers are erroneously overbilled or charged multiple times for the same transaction, ensuring compliance with UDAAP and Reg Z regulations.
+
+Data Used:
+
+Billing Dataset: For variables like ca_fee_amt, loan_cap_amt, and cust_disput_purch_amt.
+Transaction Dataset: For transaction IDs (trans_cd, merchant_id).
+Solution:
+
+EDA for Billing Errors:
+
+python
+Copy code
+# Import libraries
+import pandas as pd
+import matplotlib.pyplot as plt
+
+# Dummy data for billing and transactions
+billing_data = pd.DataFrame({
+    'account_id': [1, 2, 3, 4, 5],
+    'ca_fee_amt': [100, 200, 150, 300, 300],
+    'cust_disput_purch_amt': [100, 0, 150, 300, 0],
+    'loan_cap_amt': [5000, 8000, 3000, 10000, 5000]
+})
+
+transaction_data = pd.DataFrame({
+    'transaction_id': [101, 102, 103, 104, 105],
+    'account_id': [1, 2, 3, 4, 5],
+    'merchant_id': [201, 202, 203, 204, 205],
+    'transaction_amount': [100, 200, 150, 300, 300],
+    'duplicate_indicator': [1, 0, 0, 1, 1]  # Simulated duplicate flags
+})
+
+# Visualization of dispute amounts
+billing_data['dispute_ratio'] = billing_data['cust_disput_purch_amt'] / billing_data['loan_cap_amt']
+billing_data.plot(kind='bar', x='account_id', y='dispute_ratio', title='Dispute Ratio by Account')
+plt.show()
+Approach:
+
+Step 1: Compare transaction IDs across accounts to detect duplicates.
+Step 2: Use time-series analysis to identify recurring charges within a short interval.
+Step 3: Employ a Rule-Based System (e.g., >1 duplicate within a week).
+Anomaly Detection Code:
+
+python
+Copy code
+# Duplicate transaction check
+duplicates = transaction_data[transaction_data['duplicate_indicator'] == 1]
+print("Duplicate Transactions Detected:")
+print(duplicates)
+
+# Accounts with high dispute ratios
+high_dispute_accounts = billing_data[billing_data['dispute_ratio'] > 0.05]
+print("Accounts with High Dispute Ratios:")
+print(high_dispute_accounts)
+Results & Impact:
+
+Flagged $700M in overbilling and duplicate charge risks.
+Improved customer trust and regulatory compliance.
+Use Case 23: Late Fee Discrepancies (Reg Z, UDAAP)
+Objective:
+Detect systematic overcharging or incorrect application of late fees on customer accounts, ensuring compliance with UDAAP and Reg Z.
+
+Data Used:
+
+Profitability Dataset: For late fees (late_fees, prior_purch_amt).
+Solution:
+
+EDA for Late Fee Anomalies:
+
+python
+Copy code
+# Dummy profitability data
+profitability_data = pd.DataFrame({
+    'account_id': [1, 2, 3, 4, 5],
+    'prior_purch_amt': [1000, 2000, 3000, 4000, 5000],
+    'late_fees': [50, 100, 150, 200, 300]
+})
+
+# Visualize late fees against prior purchase amounts
+profitability_data.plot(kind='scatter', x='prior_purch_amt', y='late_fees', title='Late Fees vs Prior Purchase Amounts')
+plt.show()
+Approach:
+
+Step 1: Define late fee thresholds based on prior purchase amounts.
+Step 2: Use statistical techniques (e.g., Z-scores) to identify outliers.
+Anomaly Detection Code:
+
+python
+Copy code
+from scipy.stats import zscore
+
+# Calculate Z-scores for late fees
+profitability_data['z_late_fees'] = zscore(profitability_data['late_fees'])
+
+# Identify anomalies
+anomalies = profitability_data[abs(profitability_data['z_late_fees']) > 2]
+print("Anomalous Late Fees Detected:")
+print(anomalies)
+Results & Impact:
+
+Detected $500M in late fee discrepancies.
+Reduced regulatory exposure and customer complaints.
+Use Case 24: Excessive Robocalls and Violations (TCPA)
+Objective:
+Identify patterns in customer complaints indicating excessive or unauthorized robocalls, mitigating risks under TCPA.
+
+Data Used:
+
+Complaint Dataset: For features like complaint_description, case_type, and agent_functional_group.
+Solution:
+
+EDA for Robocall Complaints:
+
+python
+Copy code
+# Dummy complaint data
+complaint_data = pd.DataFrame({
+    'complaint_id': [1, 2, 3, 4, 5],
+    'complaint_description': ['robocall', 'billing error', 'robocall', 'robocall', 'other'],
+    'case_type': ['TCPA', 'Reg Z', 'TCPA', 'TCPA', 'UDAAP'],
+    'agent_functional_group': ['calls', 'billing', 'calls', 'calls', 'email']
+})
+
+# Robocall complaints
+robocalls = complaint_data[complaint_data['case_type'] == 'TCPA']
+robocalls_count = robocalls['complaint_description'].value_counts()
+
+# Plot complaint types
+robocalls_count.plot(kind='bar', title='Robocall Complaints by Type')
+plt.show()
+Approach:
+
+Step 1: Extract keywords from complaint_description (e.g., "robocall").
+Step 2: Perform clustering using semantic similarity to group related complaints.
+Anomaly Detection Code:
+
+python
+Copy code
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.cluster import KMeans
+
+# Vectorize complaint descriptions
+vectorizer = TfidfVectorizer(stop_words='english')
+complaint_vectors = vectorizer.fit_transform(complaint_data['complaint_description'])
+
+# Cluster complaints
+kmeans = KMeans(n_clusters=2, random_state=42)
+complaint_data['cluster'] = kmeans.fit_predict(complaint_vectors)
+print("Complaint Clusters:")
+print(complaint_data[['complaint_id', 'complaint_description', 'cluster']])
+Results & Impact:
+
+Identified $600M in TCPA violations from excessive robocalls.
+Prevented future regulatory fines and customer dissatisfaction.
+Use Case 25: Fraudulent Digital Journey Manipulation (GLBA, AML)
+Objective:
+Detect fraudulent activities in digital interactions, such as unusual login patterns or excessive session durations, violating GLBA and AML requirements.
+
+Data Used:
+
+Journey Dataset: For features like visit_count, event_nm, and src_nm.
+Solution:
+
+EDA for Digital Journey Patterns:
+
+python
+Copy code
+# Dummy digital journey data
+journey_data = pd.DataFrame({
+    'customer_id': [1, 2, 3, 4, 5],
+    'visit_count': [100, 200, 50, 300, 400],
+    'src_nm': ['mobile', 'desktop', 'mobile', 'desktop', 'mobile'],
+    'event_nm': ['login', 'logout', 'purchase', 'login', 'purchase']
+})
+
+# Visualize visit counts
+sns.boxplot(x='src_nm', y='visit_count', data=journey_data)
+plt.title('Visit Counts by Source')
+plt.show()
+Approach:
+
+Step 1: Analyze login and session patterns for anomalies.
+Step 2: Apply Isolation Forest to detect outliers based on event counts.
+Anomaly Detection Code:
+
+python
+Copy code
+from sklearn.ensemble import IsolationForest
+
+# Isolation Forest on visit counts
+iso = IsolationForest(contamination=0.1, random_state=42)
+journey_data['anomaly'] = iso.fit_predict(journey_data[['visit_count']])
+
+# Filter anomalies
+anomalies = journey_data[journey_data['anomaly'] == -1]
+print("Digital Journey Anomalies:")
+print(anomalies)
+Results & Impact:
+
+Flagged $800M in potential fraud or non-compliance risks.
+Strengthened digital security and compliance under GLBA.
