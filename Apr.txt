@@ -1,0 +1,127 @@
+Use Case 2: Reg Z Compliance
+Objective
+Identify anomalies in APR (Annual Percentage Rate) re-evaluations to ensure compliance with Reg Z. The goal is to flag accounts where APR adjustments were missed or miscalculated, potentially leading to non-compliance.
+
+Data Used
+Profitability Dataset:
+
+apr_index_id (APR adjustment eligibility)
+cof_fixed_bal_rt (current fixed balance rate)
+tot_pts_amount (total reward points earned)
+rebate_amt (rebates awarded)
+pure_purch_trans_bal_amt (purchase transaction balance)
+prior_purch_amt (prior purchase amount)
+late_fees (late payment fees)
+Solution
+1. EDA
+Key steps include:
+
+Check APR adjustment patterns:
+
+Analyze the distribution of cof_fixed_bal_rt for eligible (apr_index_id flagged as eligible) and non-eligible accounts.
+Look for unusual clusters or outliers in APR rates.
+Correlation Analysis:
+
+Assess how pure_purch_trans_bal_amt, prior_purch_amt, and rebate_amt correlate with APR adjustments.
+Trend Analysis:
+
+Evaluate cof_fixed_bal_rt over time for eligible accounts (apr_index_id).
+Identify accounts where the APR remained static despite eligibility.
+2. Feature Engineering
+We’ll create features to capture anomalous APR adjustment behavior:
+
+Feature Name	Description	Purpose
+is_apr_eligible	Binary feature indicating APR adjustment eligibility (1 if apr_index_id indicates eligible).	Flags accounts subject to Reg Z compliance.
+apr_adjustment_diff	Difference between cof_fixed_bal_rt and the expected APR rate (based on mean APR for eligible accounts).	Detects unusual deviations in APR adjustments.
+late_fee_ratio	Ratio of late_fees to pure_purch_trans_bal_amt.	Identifies customers potentially penalized with high late fees affecting APR adjustments.
+points_rebate_ratio	Ratio of tot_pts_amount to rebate_amt.	Flags anomalies in reward distribution linked to APR adjustments.
+prior_balance_change	Difference between prior_purch_amt and pure_purch_trans_bal_amt.	Captures drastic changes in purchase patterns potentially affecting APR calculations.
+3. Anomaly Detection Methodology
+Modeling: Unsupervised Approach
+Isolation Forest:
+Identify anomalous APR adjustments by analyzing the features like apr_adjustment_diff and prior_balance_change.
+PCA (Principal Component Analysis):
+Reduce dimensionality and detect outliers in APR adjustment patterns.
+Non-Modeling: Rule-Based Approach
+Define thresholds based on domain knowledge:
+
+Accounts eligible for APR adjustment (is_apr_eligible == 1) with apr_adjustment_diff > 2.0% are flagged.
+Accounts with late_fee_ratio > 0.05 or points_rebate_ratio < 0.8 are flagged.
+Hybrid Approach
+Combine Isolation Forest to detect anomalous patterns with rule-based thresholds for clear explanations.
+
+4. Python Implementation
+EDA and Feature Engineering
+Here’s the Python code for this use case:
+
+python
+Copy code
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.ensemble import IsolationForest
+from sklearn.decomposition import PCA
+
+# Load data
+profitability = pd.read_csv('profitability_dataset.csv')
+
+# EDA: APR Adjustment Analysis
+plt.figure(figsize=(10, 6))
+profitability['cof_fixed_bal_rt'].hist(bins=50, alpha=0.7, label='APR Rate')
+plt.title('Distribution of APR Rates')
+plt.xlabel('APR Rate')
+plt.ylabel('Frequency')
+plt.legend()
+plt.show()
+
+# Feature Engineering
+profitability['is_apr_eligible'] = (profitability['apr_index_id'] == 'eligible').astype(int)
+avg_apr_rate = profitability[profitability['is_apr_eligible'] == 1]['cof_fixed_bal_rt'].mean()
+profitability['apr_adjustment_diff'] = np.abs(profitability['cof_fixed_bal_rt'] - avg_apr_rate)
+profitability['late_fee_ratio'] = profitability['late_fees'] / (profitability['pure_purch_trans_bal_amt'] + 1e-6)
+profitability['points_rebate_ratio'] = profitability['tot_pts_amount'] / (profitability['rebate_amt'] + 1e-6)
+profitability['prior_balance_change'] = profitability['pure_purch_trans_bal_amt'] - profitability['prior_purch_amt']
+
+# Anomaly Detection
+features = ['apr_adjustment_diff', 'late_fee_ratio', 'points_rebate_ratio', 'prior_balance_change']
+X = profitability[features].fillna(0)
+
+# Isolation Forest
+iso_forest = IsolationForest(contamination=0.01, random_state=42)
+profitability['is_anomalous'] = iso_forest.fit_predict(X)
+
+# PCA for visualization
+pca = PCA(n_components=2, random_state=42)
+profitability[['pca1', 'pca2']] = pca.fit_transform(X)
+
+# Visualize anomalies
+plt.figure(figsize=(10, 6))
+plt.scatter(profitability['pca1'], profitability['pca2'], c=profitability['is_anomalous'], cmap='coolwarm', alpha=0.7)
+plt.title('PCA Visualization of Anomalies')
+plt.xlabel('PCA Component 1')
+plt.ylabel('PCA Component 2')
+plt.show()
+
+# Rule-Based Detection
+profitability['rule_based_flag'] = ((profitability['is_apr_eligible'] == 1) &
+                                    (profitability['apr_adjustment_diff'] > 0.02)) | \
+                                   (profitability['late_fee_ratio'] > 0.05) | \
+                                   (profitability['points_rebate_ratio'] < 0.8)
+
+# Results
+anomalies = profitability[profitability['is_anomalous'] == -1]
+rule_based_anomalies = profitability[profitability['rule_based_flag'] == True]
+
+print(f"Total anomalies detected by Isolation Forest: {len(anomalies)}")
+print(f"Total anomalies detected by rule-based method: {len(rule_based_anomalies)}")
+5. Assumptions
+APR Eligibility:
+Accounts with apr_index_id flagged as eligible are subject to re-evaluation.
+Thresholds:
+Rule-based thresholds are based on historical patterns and domain knowledge.
+6. Results & Impacts
+Isolation Forest detected X anomalies impacting APR adjustments.
+Rule-based methods flagged Y accounts with potential compliance gaps.
+Financial Impact:
+Total affected balance: $Z.
+Potential fines avoided: $A.
