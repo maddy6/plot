@@ -1,3 +1,22 @@
+from nltk.sentiment.vader import SentimentIntensityAnalyzer
+from nltk.sentiment.util import read_lexicon
+
+# Load the lexicon manually
+lexicon_path = '<path_to_vader_lexicon.txt>'
+with open(lexicon_path, 'r') as file:
+    vader_lexicon = {line.split('\t')[0]: float(line.split('\t')[1]) for line in file if not line.startswith(';')}
+
+# Initialize the Sentiment Analyzer
+sid = SentimentIntensityAnalyzer(lexicon=vader_lexicon)
+
+# Example usage
+text = "The service was terrible, but the refund policy is great."
+print(sid.polarity_scores(text))
+
+
+
+
+
 import pandas as pd
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.decomposition import LatentDirichletAllocation
