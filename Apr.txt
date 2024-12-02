@@ -1,3 +1,7 @@
+df_cleaned = df.loc[:, ~df.apply(lambda col: col.isna().all() or (col.fillna(0.0) == 0.0).all())]
+
+
+
 Use Case 2: Reg Z Compliance
 Objective
 Identify anomalies in APR (Annual Percentage Rate) re-evaluations to ensure compliance with Reg Z. The goal is to flag accounts where APR adjustments were missed or miscalculated, potentially leading to non-compliance.
