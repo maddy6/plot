@@ -1,0 +1,91 @@
+import pandas as pd
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.decomposition import LatentDirichletAllocation
+from sklearn.ensemble import IsolationForest
+from nltk.sentiment.vader import SentimentIntensityAnalyzer
+import nltk
+import matplotlib.pyplot as plt
+
+# Download necessary resources for sentiment analysis
+nltk.download('vader_lexicon')
+
+# Load the dataset (replace 'your_dataset.csv' with the actual file path)
+complaints = pd.read_csv("your_dataset.csv")  # Ensure it contains a 'complaint_description' column
+
+# Preprocessing
+complaints['cleaned_text'] = complaints['complaint_description'].str.lower().str.replace(r'[^\w\s]', '', regex=True)
+
+# 1. Feature Engineering
+# Initialize Sentiment Analyzer
+sid = SentimentIntensityAnalyzer()
+
+# Define keyword-based flags
+keywords_communication_issues = ["ivr", "verification", "not recognizing", "unable to", "declined", "frustrated", "failed"]
+
+# Create Features
+complaints['negative_sentiment_flag'] = complaints['complaint_description'].apply(
+    lambda x: 1 if sid.polarity_scores(x)['compound'] < -0.5 else 0
+)
+complaints['communication_issue_flag'] = complaints['cleaned_text'].apply(
+    lambda x: 1 if any(keyword in x for keyword in keywords_communication_issues) else 0
+)
+complaints['repeat_complaint_flag'] = complaints['complaint_description'].duplicated(keep=False).astype(int)
+
+# Additional features based on dataset metadata
+# Simulate a field for `age_of_edit` if not available
+import numpy as np
+complaints['age_of_edit'] = np.random.randint(1, 30, size=len(complaints))  # Placeholder for example
+complaints['long_resolution_time_flag'] = (complaints['age_of_edit'] > 15).astype(int)
+
+# 2. Topic Modeling
+vectorizer = CountVectorizer(stop_words='english')
+dtm = vectorizer.fit_transform(complaints['cleaned_text'])
+
+lda = LatentDirichletAllocation(n_components=3, random_state=42)
+lda.fit(dtm)
+
+# Extract topic keywords
+words = vectorizer.get_feature_names_out()
+topics = {f"Topic {i+1}": [words[idx] for idx in topic.argsort()[-10:]] for i, topic in enumerate(lda.components_)}
+
+# Display Topics
+print("Identified Topics and Top Words:")
+for topic, keywords in topics.items():
+    print(f"{topic}: {', '.join(keywords)}")
+
+# 3. Rule-Based Anomaly Detection
+complaints['anomaly_flag_rule_based'] = (
+    complaints['negative_sentiment_flag'] +
+    complaints['communication_issue_flag'] +
+    complaints['repeat_complaint_flag']
+) >= 2  # Adjust threshold as needed
+
+# 4. Unsupervised Anomaly Detection using Isolation Forest
+# Select Features for Modeling
+modeling_features = complaints[['negative_sentiment_flag', 'communication_issue_flag', 'repeat_complaint_flag', 'long_resolution_time_flag']]
+
+# Fit Isolation Forest
+model = IsolationForest(contamination=0.01, random_state=42)
+complaints['anomaly_score_model_based'] = model.fit_predict(modeling_features)
+
+# Combine Rule-Based and Model-Based Anomalies
+complaints['final_anomaly_flag'] = (
+    (complaints['anomaly_flag_rule_based'] == True) |
+    (complaints['anomaly_score_model_based'] == -1)
+).astype(int)
+
+# 5. Analysis and Visualization
+# Anomalies Summary
+anomalies = complaints[complaints['final_anomaly_flag'] == 1]
+print(f"Total anomalies detected: {len(anomalies)}")
+print("Sample anomalies:")
+print(anomalies.head())
+
+# Trend of Complaints with Negative Sentiment
+complaints['date'] = pd.to_datetime("2024-12-01") - pd.to_timedelta(np.random.randint(1, 90, size=len(complaints)), unit='D')  # Simulate dates
+complaint_trend = complaints.groupby('date')['negative_sentiment_flag'].sum()
+complaint_trend.plot(kind='line', title="Trend of Complaints with Negative Sentiment", xlabel="Date", ylabel="Count")
+plt.show()
+
+# Save Output
+complaints.to_csv("complaints_with_anomalies.csv", index=False)
