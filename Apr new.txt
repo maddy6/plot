@@ -1,0 +1,276 @@
+Use Case: Reg Z Compliance with Updated Profitability Dataset
+Objective:
+To identify anomalies in Annual Percentage Rate (APR) reevaluation for eligible accounts, ensuring compliance with Regulation Z (Reg Z), which mandates accurate APR reevaluation for eligible accounts to avoid regulatory fines.
+
+Data Used:
+Dataset: Updated Profitability Dataset
+Key Variables:
+cash goto apr rt (cash advance APR rate)
+amort balcon fee amt new (amortized balance on fee amount)
+late fees (late payment charges)
+total all fees amt (total fees incurred by the account)
+total net fees amt (total net fees after rebates/adjustments)
+net interest amt (net interest charged)
+nim amt (net interest margin)
+prior purch amt (prior month's purchase amount)
+lst pymt dte (date of last payment)
+interest (interest charged)
+return amt (returned purchase amount)
+total credit limit (total credit line of the customer)
+ca amt (cash advance amount)
+cash adv fee (fees associated with cash advances)
+aff rebate (affiliate rebate amount)
+Solution:
+1. EDA (Exploratory Data Analysis):
+
+Analyze distributions of key variables (e.g., cash goto apr rt, total net fees amt, nim amt) to identify outliers.
+Check missing values and correlations between variables like APR, fees, and payment patterns.
+Visualize time-based trends in lst pymt dte and its relation to late fees or interest accumulation.
+2. Feature Engineering: Generate new features to identify patterns indicative of non-compliance or anomalies:
+
+Feature Name	Formula/Description	Relevance
+days_since_last_payment	(Current Date - lst pymt dte)	Captures delayed payments; relates to late fees and potential APR violations.
+fee_to_limit_ratio	total all fees amt / total credit limit	High ratios could indicate excessive fees compared to the credit limit.
+avg_cash_advance_fee	cash adv fee / ca amt	Indicates disproportionate fees on cash advances.
+interest_efficiency	interest / net interest amt	Measures if interest aligns with net interest margin, signaling unusual APR adjustments.
+prior_to_current_purchase_ratio	prior purch amt / purch amt	Identifies significant changes in purchasing behavior, which could affect APR reevaluation.
+revenue_fee_ratio	revenue amortized amt / total all fees amt	Assesses if revenue aligns with fees charged; deviations could indicate overcharging.
+credit_limit_utilization	(purch amt + ca amt) / total credit limit	Measures how much credit is being utilized; anomalies here could affect APR.
+late_fee_frequency	Count(late fees) / Total Periods	Tracks the frequency of late fees, which could impact APR adjustments.
+high_cash_advance_flag	1 if ca amt > threshold else 0	Flags accounts with unusually high cash advances.
+returned_purchase_ratio	return amt / purch amt	Highlights frequent returns, potentially causing miscalculations in APR or fees.
+bad_check_to_fee_ratio	bad chk fee / total net fees amt	Indicates accounts with higher-than-average bad check fees.
+3. Anomaly Detection Methodology:
+
+Modeling: Use unsupervised machine learning techniques:
+
+Isolation Forest: To detect outliers based on APR rates and fee patterns.
+DBSCAN: For clustering accounts with similar APR and transaction behavior, identifying irregular groups.
+PCA (Principal Component Analysis): For dimensionality reduction and visualization of anomalies.
+Non-Modeling:
+
+Rule-Based Logic:
+Accounts with fee_to_limit_ratio > 0.2.
+days_since_last_payment > 90 triggering late fees without APR adjustments.
+returned_purchase_ratio > 0.5, indicating potential APR miscalculation.
+4. Python Implementation:
+
+Below is the end-to-end Python pipeline for EDA, feature engineering, and anomaly detection:
+
+python
+Copy code
+import pandas as pd
+import numpy as np
+from sklearn.ensemble import IsolationForest
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Load data
+data = pd.read_csv('updated_profitability_data.csv')
+
+# EDA: Summary Statistics
+print(data.describe())
+missing_values = data.isnull().sum()
+print("Missing Values:\n", missing_values)
+
+# Feature Engineering
+data['days_since_last_payment'] = (pd.Timestamp.now() - pd.to_datetime(data['lst pymt dte'])).dt.days
+data['fee_to_limit_ratio'] = data['total all fees amt'] / data['total credit limit']
+data['avg_cash_advance_fee'] = data['cash adv fee'] / data['ca amt']
+data['interest_efficiency'] = data['interest'] / data['net interest amt']
+data['prior_to_current_purchase_ratio'] = data['prior purch amt'] / data['purch amt']
+data['revenue_fee_ratio'] = data['revenue amortized amt'] / data['total all fees amt']
+data['credit_limit_utilization'] = (data['purch amt'] + data['ca amt']) / data['total credit limit']
+data['late_fee_frequency'] = data.groupby('temp key')['late fees'].transform('count') / data['per num']
+data['high_cash_advance_flag'] = (data['ca amt'] > 5000).astype(int)
+data['returned_purchase_ratio'] = data['return amt'] / data['purch amt']
+data['bad_check_to_fee_ratio'] = data['bad chk fee'] / data['total net fees amt']
+
+# Scaling data
+features = ['fee_to_limit_ratio', 'avg_cash_advance_fee', 'interest_efficiency', 
+            'prior_to_current_purchase_ratio', 'revenue_fee_ratio', 'credit_limit_utilization']
+X = data[features].fillna(0)
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
+
+# Anomaly Detection using Isolation Forest
+iso_forest = IsolationForest(contamination=0.01, random_state=42)
+data['anomaly_score'] = iso_forest.fit_predict(X_scaled)
+
+# PCA for visualization
+pca = PCA(n_components=2)
+X_pca = pca.fit_transform(X_scaled)
+data['pca1'], data['pca2'] = X_pca[:, 0], X_pca[:, 1]
+
+# Visualizing Anomalies
+plt.figure(figsize=(10, 6))
+sns.scatterplot(x='pca1', y='pca2', hue='anomaly_score', palette='coolwarm', data=data)
+plt.title("PCA Visualization of Anomalies")
+plt.show()
+
+# Rule-Based Anomalies
+data['rule_based_anomaly'] = (
+    (data['fee_to_limit_ratio'] > 0.2) |
+    (data['days_since_last_payment'] > 90) |
+    (data['returned_purchase_ratio'] > 0.5)
+).astype(int)
+
+# Save results
+data.to_csv('profitability_anomaly_results.csv', index=False)
+5. Assumptions:
+
+Data quality and integrity are assumed to be high for reliable calculations.
+Thresholds (e.g., fee_to_limit_ratio > 0.2) are set based on domain expertise and industry norms but require periodic tuning.
+6. Results & Impacts:
+
+Number of anomalies detected: Quantified from model outputs.
+Potential financial impact: Aggregated from features like total all fees amt and cash adv fee for flagged accounts.
+Business insights: Highlights accounts most likely to violate Reg Z compliance due to incorrect APR or fee calculations.
+
+
+
+
+
+You said:
+I want detailed EDA analysis also please . Also give me python code also .
+
+Why we are doing EDA and for which variables we are doing and how it will help us in understating in which sense?
+ChatGPT said:
+ChatGPT
+Why Perform EDA (Exploratory Data Analysis)?
+EDA helps uncover patterns, anomalies, relationships, and summary statistics in the data, providing valuable insights into its structure and quality. For the Profitability Dataset, EDA is crucial to:
+
+Understand Variable Distributions: Examine the spread of numerical variables (e.g., cash goto apr rt, total credit limit) to identify outliers, skewness, or irregularities that may impact downstream analyses.
+Detect Missing or Erroneous Data: Identify gaps or errors (e.g., NaN, inconsistent date formats) that could distort feature engineering or modeling efforts.
+Correlations and Relationships: Analyze how variables like net interest amt, late fees, and total all fees amt relate to each other and identify critical predictors for APR anomalies.
+Segmentation Opportunities: Segment data based on variables like temp key, prior purch amt, or total credit limit to identify unique patterns in customer behavior.
+Feature Suitability: Validate whether variables such as interest, purch amt, or cash adv fee are informative for detecting anomalies and compliance risks.
+Detailed EDA Plan for the Profitability Dataset
+1. Summarize the Dataset:
+
+Analyze dimensions (rows, columns).
+List and count categorical and numerical variables.
+Summarize key statistics (mean, median, std, min, max).
+2. Missing Value Analysis:
+
+Assess missing value percentages.
+Decide on imputation or exclusion strategies.
+3. Distribution Analysis:
+
+Plot histograms for variables like total credit limit, interest, and net interest amt.
+Use boxplots to highlight outliers in late fees and cash goto apr rt.
+4. Correlation Analysis:
+
+Compute Pearson/Spearman correlation matrices for continuous variables.
+Identify highly correlated variables (e.g., net interest amt vs. interest).
+5. Date and Temporal Patterns:
+
+Analyze lst pymt dte for patterns in payment behavior.
+Plot trends for late fees and total all fees amt over time.
+6. Group-Level Summaries:
+
+Group by temp key or customer segments and analyze aggregated metrics.
+Example: Compare total credit limit vs. net interest amt across accounts.
+7. Identify Potential Issues:
+
+Highlight unusual values in variables like cash adv fee and return amt.
+Check for logical inconsistencies (e.g., negative purch amt).
+Python Code for Detailed EDA
+Below is the Python implementation for performing EDA on the updated profitability dataset.
+
+python
+Copy code
+import pandas as pd
+import numpy as np
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+# Load Dataset
+data = pd.read_csv('updated_profitability_data.csv')
+
+# 1. Summary of the Dataset
+print("Shape of Dataset:", data.shape)
+print("Column Names:\n", data.columns)
+print("Summary Statistics:\n", data.describe())
+print("Data Types:\n", data.dtypes)
+
+# 2. Missing Value Analysis
+missing_values = data.isnull().sum()
+missing_percentage = (missing_values / len(data)) * 100
+missing_df = pd.DataFrame({'Missing Values': missing_values, 'Percentage': missing_percentage})
+print("Missing Value Analysis:\n", missing_df.sort_values(by='Percentage', ascending=False))
+
+# 3. Distribution Analysis
+numerical_columns = data.select_dtypes(include=['float64', 'int64']).columns
+for col in numerical_columns:
+    plt.figure(figsize=(8, 4))
+    sns.histplot(data[col].dropna(), kde=True, bins=30, color='blue')
+    plt.title(f"Distribution of {col}")
+    plt.xlabel(col)
+    plt.ylabel("Frequency")
+    plt.show()
+
+# 4. Boxplots for Outliers
+for col in ['cash goto apr rt', 'late fees', 'total credit limit', 'total all fees amt']:
+    plt.figure(figsize=(8, 4))
+    sns.boxplot(x=data[col], color='orange')
+    plt.title(f"Boxplot of {col}")
+    plt.xlabel(col)
+    plt.show()
+
+# 5. Correlation Analysis
+correlation_matrix = data[numerical_columns].corr()
+plt.figure(figsize=(12, 8))
+sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm', fmt=".2f")
+plt.title("Correlation Matrix")
+plt.show()
+
+# 6. Trends and Temporal Analysis
+if 'lst pymt dte' in data.columns:
+    data['lst pymt dte'] = pd.to_datetime(data['lst pymt dte'], errors='coerce')
+    data['days_since_last_payment'] = (pd.Timestamp.now() - data['lst pymt dte']).dt.days
+    plt.figure(figsize=(8, 4))
+    sns.histplot(data['days_since_last_payment'].dropna(), bins=30, kde=True, color='green')
+    plt.title("Days Since Last Payment")
+    plt.xlabel("Days")
+    plt.ylabel("Frequency")
+    plt.show()
+
+# 7. Group-Level Summaries
+grouped_data = data.groupby('temp key').agg({
+    'total credit limit': 'mean',
+    'net interest amt': 'sum',
+    'late fees': 'sum',
+    'purch amt': 'mean'
+}).reset_index()
+print("Grouped Data Summary:\n", grouped_data.head())
+
+# 8. Highlight Potential Issues
+potential_issues = data[
+    (data['cash adv fee'] > data['ca amt']) |  # Cash advance fee > amount
+    (data['return amt'] > data['purch amt']) |  # Return amount > purchase amount
+    (data['total all fees amt'] < 0)           # Total fees are negative
+]
+print("Potential Issues:\n", potential_issues)
+
+# 9. Visualizing Specific Relationships
+sns.scatterplot(x=data['total credit limit'], y=data['total all fees amt'], hue=data['interest'])
+plt.title("Total Credit Limit vs. Total Fees with Interest")
+plt.xlabel("Total Credit Limit")
+plt.ylabel("Total All Fees Amt")
+plt.show()
+
+sns.scatterplot(x=data['cash goto apr rt'], y=data['interest'])
+plt.title("Cash APR Rate vs. Interest")
+plt.xlabel("Cash APR Rate")
+plt.ylabel("Interest")
+plt.show()
+How This Helps:
+Variable Understanding: By visualizing distributions and summary statistics, you can identify variables with extreme values (e.g., high APR rates or unusual fees).
+Anomaly Identification: Outliers in cash goto apr rt or total credit limit can hint at potential issues with APR reevaluations or mismanagement.
+Feature Relationships: Correlation and scatterplots reveal interactions between fees, credit limits, and interest, providing insights for feature engineering.
+Error Detection: Missing values, logical inconsistencies, or negative values (e.g., total all fees amt) can indicate data quality issues requiring correction.
+Temporal Patterns: Analysis of lst pymt dte can uncover delays in payments leading to late fees or APR adjustments.
+This EDA lays a strong foundation for anomaly detection and compliance checks by ensuring data quality, identifying patterns, and understanding relationships critical for Reg Z compliance. Let me know if you'd like to proceed to the next phase or explore more variables!
