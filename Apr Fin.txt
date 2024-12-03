@@ -1,0 +1,244 @@
+In the context of the use case: "Identify anomalies in APR (Annual Percentage Rate) re-evaluations to ensure compliance with Reg Z", the focus is primarily on understanding how APR is applied, how it's being re-evaluated, and ensuring that it complies with the Truth in Lending Act (Reg Z). This regulation mandates that lenders disclose the APR clearly and accurately to ensure consumers understand the cost of borrowing.
+
+Given the above goal, we need to filter and focus on variables that specifically tie into APR re-evaluations, interest rates, fees, and credit limits, among others. The variables should be those that can help us monitor the correctness of APR calculations, potential discrepancies, or inconsistencies in APR-related information.
+
+Let's go through the variables you listed and discuss which ones are relevant and how they relate to APR re-evaluations and Reg Z compliance:
+
+Relevant Variables for Reg Z Compliance (APR Re-evaluations)
+interest
+
+Relevance: The interest amount is directly tied to the APR, as APR essentially represents the total interest charged over the course of a year as a percentage of the outstanding loan balance.
+Use in Use Case: Monitor if interest charges are correctly calculated relative to APR. Anomalies in interest charges (compared to the expected APR) could signal a problem with the APR application or miscalculations.
+interest_efficiency (Derived from interest / net interest amt)
+
+Relevance: This ratio measures the efficiency of interest charges relative to the bank's operations. A discrepancy in how efficiently interest is charged could indicate improper application of APR.
+Use in Use Case: Check if the efficiency of interest charges is consistent with the expected APR for different customer segments.
+cash_to_purchase_ratio
+
+Relevance: High cash advances are often associated with higher interest rates, and if the APR is incorrectly applied to cash advances, it could result in non-compliance with Reg Z.
+Use in Use Case: Detect discrepancies in APR application to cash advances. If APR for cash advances is much higher than for purchases, it should be monitored.
+purchase_to_limit_ratio
+
+Relevance: This ratio could indirectly help monitor credit utilization, which is often factored into the APR recalculation for certain credit products.
+Use in Use Case: Check for overutilization of credit limits which could affect APR adjustments, particularly in situations where APR might be penalized due to high credit usage.
+fee_to_expense_ratio
+
+Relevance: This ratio assesses how much of the total expenses are derived from fees, which can influence the APR calculation in some cases.
+Use in Use Case: Monitor how fees are affecting overall costs for customers, ensuring that fees are appropriately disclosed and do not artificially inflate the APR.
+late_fee_impact_ratio
+
+Relevance: Late fees are a critical aspect of how APR might be re-evaluated for late payments or missed deadlines.
+Use in Use Case: Ensure late fees are not disproportionately high or improperly applied, as this could lead to a higher-than-expected APR in violation of Reg Z.
+foreign_sales_ratio
+
+Relevance: This may be less directly tied to APR re-evaluations but could still be important if foreign transactions are subject to different APRs or additional fees that could alter the APR calculation.
+Use in Use Case: Monitor for discrepancies in APR charges between domestic and international transactions, which should be correctly disclosed under Reg Z.
+cash_advance_efficiency
+
+Relevance: Cash advances often have higher APRs, and ensuring these APRs are calculated correctly is critical for Reg Z compliance.
+Use in Use Case: Monitor APR for cash advances, ensuring they are applied correctly and comply with the agreed terms.
+points_redemption_ratio
+
+Relevance: While this may not directly affect APR, points redemptions can be factored into the overall cost of credit in certain programs.
+Use in Use Case: Could be useful to understand how customer behavior (redeeming points) influences the overall financial product, though less relevant for APR recalculations.
+
+
+
+
+
+New Variables Derived for Reg Z Compliance
+You could focus on variables that directly impact APR re-evaluations based on customer behavior, fees, and interest charges:
+
+APR Discrepancy Detection Variables:
+
+interest_efficiency and cash_to_purchase_ratio: To track if APR is being applied appropriately based on interest rates and purchase behavior.
+Fee-Based Impact Variables:
+
+fee_to_expense_ratio and late_fee_impact_ratio: To evaluate whether fees (such as late fees) are disproportionately affecting the cost of credit and whether they are being disclosed properly in APR calculations.
+Credit Usage-Based Variables:
+
+purchase_to_limit_ratio and cash_advance_efficiency: To monitor if APR adjustments are being made based on credit utilization and cash advance usage.
+Customer Behavior-Based Variables:
+
+points_redemption_ratio: To evaluate customer engagement with the credit product and monitor if rewards or points affect APR re-evaluations.
+Geographic/Transaction Type Variables:
+
+foreign_sales_ratio: To check if foreign transactions are treated differently in the APR calculations.
+How These Variables Help in Detecting Anomalies in APR Re-evaluations
+The goal of the use case is to ensure compliance with Reg Z by identifying anomalies in how APR is applied. These derived variables will help by:
+
+Identifying Overcharges or Miscalculations:
+
+Variables like interest efficiency and cash-advance efficiency can flag instances where APR is incorrectly calculated or where charges are disproportionate compared to the credit being utilized.
+Monitoring the Impact of Fees on APR:
+
+Fee-to-expense ratio and late fee impact ratio help identify scenarios where fees are inflated, potentially leading to excessive APR recalculations. This ensures that fees are transparent and compliant with Reg Z.
+Tracking Credit Utilization Patterns:
+
+Ratios like purchase-to-limit and cash-advance-to-purchase help ensure APR calculations remain fair and within limits for customers who have high credit utilization, reducing the risk of inappropriate APR increases due to overutilization.
+Customer Behavior Insights:
+
+The points redemption ratio and foreign sales ratio give insights into customer behavior that could influence APR rates or fees in ways that need careful monitoring to ensure compliance.
+Conclusion
+In summary, not all variables in your dataset are directly relevant for monitoring APR re-evaluations under Reg Z compliance. You can filter out general profitability variables (like total expenses or net fees) and focus on variables tied to interest, fees, and credit usage to effectively monitor APR recalculations. By using the variables identified above, you can flag anomalies where APR may not be applied correctly or is outside acceptable thresholds, ensuring Reg Z compliance and protecting customers from unfair practices.
+
+
+
+
+
+import pandas as pd
+import numpy as np
+
+# Load the dataset (Assuming it's already preprocessed)
+data = pd.read_csv('your_dataset.csv')
+
+# Drop columns that are irrelevant or have too many missing values
+columns_to_drop = ['total all fees amt', 'net interest amt', 'revenue amortized amt', 'total credit limit']
+data = data.drop(columns=columns_to_drop)
+
+# Check for missing values
+data.isnull().sum()
+
+
+
+
+
+# Create new features for APR re-evaluations
+data['interest_efficiency'] = data['interest'] / data['net interest amt']
+data['cash_to_purchase_ratio'] = data['cash goto apr rt'] / data['purch amt']  # example of cash to purchase ratio
+data['purchase_to_limit_ratio'] = data['purch bal amt'] / data['total credit limit']  # example of purchase to limit ratio
+data['fee_to_expense_ratio'] = data['total expense amt'] / data['total net fees amt']  # example fee to expense ratio
+data['late_fee_impact_ratio'] = data['late fees'] / data['total net fees amt']  # example late fee impact ratio
+data['foreign_sales_ratio'] = data['tot foreign sales amt'] / data['tot foreign sales amt'].sum()  # example foreign sales ratio
+
+
+
+# Check for missing values
+data.isnull().sum()
+
+# Fill missing values with median for numerical features
+data.fillna(data.median(), inplace=True)
+
+
+
+
+from sklearn.ensemble import IsolationForest
+from sklearn.preprocessing import StandardScaler
+
+# Standardize the features
+scaler = StandardScaler()
+data_scaled = scaler.fit_transform(data[['interest_efficiency', 'cash_to_purchase_ratio', 'purchase_to_limit_ratio', 
+                                         'fee_to_expense_ratio', 'late_fee_impact_ratio', 'foreign_sales_ratio']])
+
+# Use Isolation Forest to detect anomalies
+model = IsolationForest(n_estimators=100, contamination=0.05)  # Set contamination to 5% for anomaly detection
+model.fit(data_scaled)
+
+# Predict anomalies (1 means normal, -1 means anomaly)
+data['anomaly'] = model.predict(data_scaled)
+
+# Filter out anomalies
+anomalies = data[data['anomaly'] == -1]
+
+
+
+
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Plot the anomalies detected in 'interest_efficiency' vs 'cash_to_purchase_ratio'
+plt.figure(figsize=(10, 6))
+sns.scatterplot(x='interest_efficiency', y='cash_to_purchase_ratio', data=data, hue='anomaly', palette={-1: 'red', 1: 'blue'})
+plt.title('Anomaly Detection in APR Re-evaluations')
+plt.show()
+
+
+# Investigating anomalies
+print("Anomalies detected:")
+print(anomalies[['interest_efficiency', 'cash_to_purchase_ratio', 'purchase_to_limit_ratio', 
+                 'fee_to_expense_ratio', 'late_fee_impact_ratio', 'foreign_sales_ratio', 'anomaly']])
+
+# Save anomalies to a CSV for further manual inspection
+anomalies.to_csv('detected_anomalies.csv', index=False)
+
+
+
+
+
+------------------ Final Code ----------------------------------------
+
+
+import pandas as pd
+import numpy as np
+from sklearn.ensemble import IsolationForest
+from sklearn.preprocessing import StandardScaler
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Load the dataset
+data = pd.read_csv('your_dataset.csv')
+
+# Drop columns that are irrelevant or have too many missing values
+columns_to_drop = ['total all fees amt', 'net interest amt', 'revenue amortized amt', 'total credit limit']
+data = data.drop(columns=columns_to_drop)
+
+# Feature engineering
+data['interest_efficiency'] = data['interest'] / data['net interest amt']
+data['cash_to_purchase_ratio'] = data['cash goto apr rt'] / data['purch amt']
+data['purchase_to_limit_ratio'] = data['purch bal amt'] / data['total credit limit']
+data['fee_to_expense_ratio'] = data['total expense amt'] / data['total net fees amt']
+data['late_fee_impact_ratio'] = data['late fees'] / data['total net fees amt']
+data['foreign_sales_ratio'] = data['tot foreign sales amt'] / data['tot foreign sales amt'].sum()
+
+# Handle missing values
+data.fillna(data.median(), inplace=True)
+
+# Standardize the features
+scaler = StandardScaler()
+data_scaled = scaler.fit_transform(data[['interest_efficiency', 'cash_to_purchase_ratio', 'purchase_to_limit_ratio', 
+                                         'fee_to_expense_ratio', 'late_fee_impact_ratio', 'foreign_sales_ratio']])
+
+# Use Isolation Forest to detect anomalies
+model = IsolationForest(n_estimators=100, contamination=0.05)
+model.fit(data_scaled)
+
+# Predict anomalies
+data['anomaly'] = model.predict(data_scaled)
+
+# Filter out anomalies
+anomalies = data[data['anomaly'] == -1]
+
+# Visualize the anomalies
+plt.figure(figsize=(10, 6))
+sns.scatterplot(x='interest_efficiency', y='cash_to_purchase_ratio', data=data, hue='anomaly', palette={-1: 'red', 1: 'blue'})
+plt.title('Anomaly Detection in APR Re-evaluations')
+plt.show()
+
+# Investigating anomalies
+print("Anomalies detected:")
+print(anomalies[['interest_efficiency', 'cash_to_purchase_ratio', 'purchase_to_limit_ratio', 
+                 'fee_to_expense_ratio', 'late_fee_impact_ratio', 'foreign_sales_ratio', 'anomaly']])
+
+# Save anomalies to a CSV
+anomalies.to_csv('detected_anomalies.csv', index=False)
+
+
+
+
+
+
+Explanation of the Code:
+Feature Engineering: We create new features like interest_efficiency, cash_to_purchase_ratio, and others that help us monitor APR-related behavior.
+
+Missing Value Handling: Missing values are filled using the median, which is a common practice in machine learning.
+
+Anomaly Detection (Isolation Forest): We use Isolation Forest because it's a robust algorithm for detecting outliers in multidimensional datasets. We set the contamination parameter to 0.05 (meaning we expect 5% of the data to be anomalous).
+
+Visualization: A scatter plot is used to visualize anomalies, helping you understand how they relate to features like interest_efficiency and cash_to_purchase_ratio.
+
+Output: The anomalies are printed and saved to a CSV file for further inspection, which helps in manually auditing APR compliance.
+
+
+
+
+

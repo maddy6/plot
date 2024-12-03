@@ -1,0 +1,233 @@
+I have participated in a Anomaly detection Hackathon. 
+
+Problem Statement: USPB is in a rapidly evolving regulatory and control environment. Banks have been subject to increasing scrutiny for breaches in their compliance towards customer obligations, Regulatory obligations and stability obligations.
+
+We are looking to get ahead of these evolving events by looking at signals in the data that can help us identify gaps to them becoming real issues.
+
+the focus will be to identify issues within customer data exhaust that represent a breakdown of our obligations either aligned to Regulations and Terms/Conditions of our customer engagements.
+
+Successful Outcome:
+Successful Outcome should deliver solutions that meets the following criteria-
+1. Ability to identify issues in the data exhaust that indicate break in the obligation
+2. Be repeatable in term of application
+3. Reflect ability to separate noise from material breakages
+4. Innovative or thorough in the approach to identifying target areas of breakages
+5. completeness - Documentation, Reasoning, Clean Code, Run time needs, assumptions, risks
+
+Evaluation Criterion and other inputs:
+Criteria     Weightage
+Solution Innovativeness 25
+Completeness 25
+Re-usability and scalability 10
+code and analytics quality 15
+Impact - High level Sizing- Customer, Fine, estimates based on data - 25
+
+
+Landscape of industry breaks and fines over last 10 years 
+Citi - $1.38B Fine
+1. Fined $733 MM+  : Misrepresenting costs and fees & charging customers for credit cards Add- on Products and services    (UDAAP)
+2. Fined $335 MM+  : Failing to re-evaluate and reduce APR's for eligible consumer credit card accounts      (Reg Z)
+3. Fined $29MM+  : Violation of TCPA by bombarding not current or former customers with robocalls     (TCPA)
+
+4. BoFA Paid $747MM - Illegal credit card practices
+5. Chase Fined $186 MM - Selling bad credit card debt and illegally robo signing documents
+6. Wells Frago fined $500MM - Violation in administering insurance program for auto loans
+
+Below is the one of the example they have provided as case study
+Example : Cash Advance Anomalies
+
+Observation & Solution output 
+10k - Accounts were flagged as anomalous with High Cash Advance amounts ,  ~3x Higher cash advance amount compared to a normal cash advance
+
+453 (#Total closed accounts) -> 399(# Involuntary Closures) ->New accounts(Month on Book <1 year (112 accounts) -> Old accounts (Month on Book > 1 year (227 accounts)
+
+Delinquent accounts (Past 6 months)
+
+2263 (#Total Delinquent Accounts) - > 283 (#highly delinquent accounts(Delinquents bucket >3)        120% (Avg Credit utilization)           (518) - Avg FICO Score
+
+Solution
+Triggers/Signals to identify these accounts
+
+>70% (Avg Credit utilization)        >2 (Current delinquent month)      Avg CA Monthly Amount ($330 (Normal CA accounts)      $967-$1k (Delinquent accounts))
+
+Types of Data shared with the participants
+1. Transaction
+2. Digital Journey
+3. Profitability
+4. Complaints
+5. Bureau
+6. Billing Statements
+
+Now we need to develop method/technique for Anomaly detection where a set algorithms (Modeling/Non Modeling/Rule based ) which is replicable & scalable.
+
+I need based on the Data provided which all possible use cases we can create and then which Anomaly detection methods can be used for those use cases. I have already provide the use cases they have given (It is mostly rule driven use case they have provided). I want all sorts of solutions. For the modeling they specifically mentioned it is a unsupervised problem as there is no tagging available. 
+
+For Data Part I will provide the detailed variables they have provide under each section. Whenever you require it , just let me know. I will give you full list of variables/features under each data set. 
+
+Now My AIM is to won the competition by providing highly robust, scalable solution. Please help me accordingly w.r.t my all above points.
+
+I need something concrete use cases . Also for data creation part i will provide you detailed list of features under each dataset. Once you finalize the use cases, detailed approaches for each use cases, Why, how and their implementation, impact etc. Give me detailed info on all aspects please.
+
+
+
+
+Profitabilty Dataset:
+Return Amount, util_ncc_brt_cl(credit limit of the highest utilized non-CCSI bank revolving trade line),
+cof_fixed_bal_rt (is the date upon which the current fe bundle structure was placed in effect, tot_pts_amount (Sum of earn_pts and tot_mon_reedem),
+rebate_amt, amort_balcon_fee_amt (sum(UA_BALC_FEE * ENR_IND)/12 for past months), cash_adv_fee (fee for open accounts),
+bk3_score_val(is the new internal behavior score which predict bankruptcy over a 12 month period), entertainment_ind(if mcc_code in 7922,
+7929,7941, 7991 then 1 else 0), prior_ca_bal_amt(prior cash advance balance amount), cost_sale_call_amt, ca_amt (cash advance amount), earn_pts(earned points amount),
+cost_fix_estatement_amt, total_all_fee_amt, cof_transacting_bal_rt(cost of funds trasnacting balance rate, apr_index_id(best customer tag),
+late_fees, pure_purch_trans_bal_amt(total net prchasng balance),purch_amt(purchase amount), purch_pay_amt, port_aff_rebate_amt(portfolio aff rebate amount), amort_annual_fee_amt, prior_purch_amt,
+port_tot_pts_amt, cost_fix_epymt_amt, cost_dlnq_coll_amt(cost-delinquency collection amount), net_interest_amt, ca_credi_limit, foreign_sales_ind,
+lst_pymt_dte(last pament date), purch_ct(purchase count), total_expense_amt, goto_fixed_balane_amt, interest, cof(cost of funds), 
+annual_purchase_fee_amt,  nim_amt, out_ca_bal_amt, total_credi_limit
+
+
+
+Complaint Dataset:
+account_number, agent_funtional_group(product service type sub group), case_edit_date, case_id, case_type, CCID (consumer ID), 
+closed_case_entitlement_level, closed_date, closed_notes, complaint_create_date, complaint_description, complaint_status, 
+escalation_group, lob_code, postal_code, product_type, regulatory_classfication_1, regulatory_classfication_2, regulatory_classfication_3,
+state_code, acct_open_date, ack_received_comments(acknowdgement received comments), ack_received_date, address_line1, address_line2,
+age_of_edit, agent_dept, agent_email, agent_emp_class, agent_goc_code, agent_id, agent_lacation, agent_manager_code, agent_manager_email,
+agent_name, agent_skill, bmps_closed_notes, case_owner_agent_dept, case_owner_agent_id,case_owner_agent_location,city, closed_case_agent_dept,
+closed_case_agent_email, closed_case_agent_country_code, closed_case_agent_id, closed_case_agent_skill,closed_notes, closed_reason,
+contect_notes, closed_notes_date, CSIID, county_code, 
+
+
+Billing Info
+loan_cap_amt, ocl_fee_3x_ct(over credit limit fees 3x count), cust_disput_purch_amt, acct_hist_11_sts_cd, pt_cli_cd, fix_pymt_eff_date,
+relf_cd, delnq_stat_cur_mon, casa_tag_13_ind, ca_fee_amt(cash advance amount), 
+
+
+
+Transaction Dataset
+stlmt_rt(settlement rate), ch_activ_term_cd(cardholder activated terminal code), bill_feature_id, sys_post_per_num, stlmt_expnt_num(settlement exponent number),
+trans_type_id(transaction type identification ,  60:cash advance, 70:payment), trans_desc(transaction description), cmo_post_cd,
+foreign_currency_code, flex_pos_mdr_amt, auth_code(authorization code), cycle_per_annum, visa_phone_id, bill_cyc_grp_id,
+trans_cd, mcc_cd (merchant category code), per_num(period number), flex_pos_ind, college_ind, person_code, card_prod_tier_cd(code to identify product tier),
+foreign_amt, mc_visa_assign_id, br_acct_nbr, merch_phone_ind, dl_tid(device level token identifer), zip_code, trans_token,
+auth_cat_ind, zip_code, transaction_amount, travel_code, dl_tid(device level token identification id), auth_amt, merchant_location,
+country code, merchant_id, member_id, bseg_id(balance segment id), 
+ 
+
+Journey Dataset
+ccid(customer id), src_nm (channel of interaction), dmn_nm(stores the category of event information),
+jrny_nm, event_nm, visit_count
+
+
+
+
+
+
+
+
+
+
+I have participated in a Anomaly detection Hackathon. 
+
+Problem Statement: USPB is in a rapidly evolving regulatory and control environment. Banks have been subject to increasing scrutiny for breaches in their compliance towards customer obligations, Regulatory obligations and stability obligations.
+
+We are looking to get ahead of these evolving events by looking at signals in the data that can help us identify gaps to them becoming real issues.
+
+the focus will be to identify issues within customer data exhaust that represent a breakdown of our obligations either aligned to Regulations and Terms/Conditions of our customer engagements.
+
+Successful Outcome:
+Successful Outcome should deliver solutions that meets the following criteria-
+1. Ability to identify issues in the data exhaust that indicate break in the obligation
+2. Be repeatable in term of application
+3. Reflect ability to separate noise from material breakages
+4. Innovative or thorough in the approach to identifying target areas of breakages
+5. completeness - Documentation, Reasoning, Clean Code, Run time needs, assumptions, risks
+
+Evaluation Criterion and other inputs:
+Criteria     Weightage
+Solution Innovativeness 25
+Completeness 25
+Re-usability and scalability 10
+code and analytics quality 15
+Impact - High level Sizing- Customer, Fine, estimates based on data - 25
+
+They have given some background info related to fines 
+Landscape of industry breaks and fines over last 10 years 
+Citi - $1.38B Fine
+1. Fined $733 MM+  : Misrepresenting costs and fees & charging customers for credit cards Add- on Products and services    (UDAAP)
+2. Fined $335 MM+  : Failing to re-evaluate and reduce APR's for eligible consumer credit card accounts      (Reg Z)
+3. Fined $29MM+  : Violation of TCPA by bombarding not current or former customers with robocalls     (TCPA)
+
+4. BoFA Paid $747MM - Illegal credit card practices
+5. Chase Fined $186 MM - Selling bad credit card debt and illegally robo signing documents
+6. Wells Frago fined $500MM - Violation in administering insurance program for auto loans
+
+
+Types of Data shared with the participants
+1. Transaction
+2. Digital Journey
+3. Profitability
+4. Complaints
+5. Bureau
+6. Billing Statements
+
+Now we need to develop method/technique for Anomaly detection where a set algorithms (Modeling/Non Modeling/Rule based ) which is replicable & scalable.
+
+I need based on the Data provided which all possible use cases we can create and then which Anomaly detection methods can be used for those use cases. I have already provide the use cases they have given (It is mostly rule driven use case they have provided). I want all sorts of solutions. For the modeling they specifically mentioned it is a unsupervised problem as there is no tagging available. 
+
+For Data Part I will provide the detailed variables they have provide under each section. Whenever you require it , just let me know. I will give you full list of variables/features under each data set. 
+
+Now My AIM is to won the competition by providing highly robust, scalable solution. Please help me accordingly w.r.t my all above points.
+
+I need something concrete use cases . Also for data creation part i will provide you detailed list of features under each dataset. Once you finalize the use cases, detailed approaches for each use cases, Why, how and their implementation, impact etc. Give me detailed info on all aspects please.
+
+
+Below is the Dataset details also for your reference
+Profitabilty Dataset:
+Return Amount, util_ncc_brt_cl(credit limit of the highest utilized non-CCSI bank revolving trade line),
+cof_fixed_bal_rt (is the date upon which the current fe bundle structure was placed in effect, tot_pts_amount (Sum of earn_pts and tot_mon_reedem),
+rebate_amt, amort_balcon_fee_amt (sum(UA_BALC_FEE * ENR_IND)/12 for past months), cash_adv_fee (fee for open accounts),
+bk3_score_val(is the new internal behavior score which predict bankruptcy over a 12 month period), entertainment_ind(if mcc_code in 7922,
+7929,7941, 7991 then 1 else 0), prior_ca_bal_amt(prior cash advance balance amount), cost_sale_call_amt, ca_amt (cash advance amount), earn_pts(earned points amount),
+cost_fix_estatement_amt, total_all_fee_amt, cof_transacting_bal_rt(cost of funds trasnacting balance rate, apr_index_id(best customer tag),
+late_fees, pure_purch_trans_bal_amt(total net prchasng balance),purch_amt(purchase amount), purch_pay_amt, port_aff_rebate_amt(portfolio aff rebate amount), amort_annual_fee_amt, prior_purch_amt,
+port_tot_pts_amt, cost_fix_epymt_amt, cost_dlnq_coll_amt(cost-delinquency collection amount), net_interest_amt, ca_credi_limit, foreign_sales_ind,
+lst_pymt_dte(last pament date), purch_ct(purchase count), total_expense_amt, goto_fixed_balane_amt, interest, cof(cost of funds), 
+annual_purchase_fee_amt,  nim_amt, out_ca_bal_amt, total_credi_limit
+
+
+
+Complaint Dataset:
+account_number, agent_funtional_group(product service type sub group), case_edit_date, case_id, case_type, CCID (consumer ID), 
+closed_case_entitlement_level, closed_date, closed_notes, complaint_create_date, complaint_description, complaint_status, 
+escalation_group, lob_code, postal_code, product_type, regulatory_classfication_1, regulatory_classfication_2, regulatory_classfication_3,
+state_code, acct_open_date, ack_received_comments(acknowdgement received comments), ack_received_date, address_line1, address_line2,
+age_of_edit, agent_dept, agent_email, agent_emp_class, agent_goc_code, agent_id, agent_lacation, agent_manager_code, agent_manager_email,
+agent_name, agent_skill, bmps_closed_notes, case_owner_agent_dept, case_owner_agent_id,case_owner_agent_location,city, closed_case_agent_dept,
+closed_case_agent_email, closed_case_agent_country_code, closed_case_agent_id, closed_case_agent_skill,closed_notes, closed_reason,
+contect_notes, closed_notes_date, CSIID, county_code, 
+
+
+Billing Info
+loan_cap_amt, ocl_fee_3x_ct(over credit limit fees 3x count), cust_disput_purch_amt, acct_hist_11_sts_cd, pt_cli_cd, fix_pymt_eff_date,
+relf_cd, delnq_stat_cur_mon, casa_tag_13_ind, ca_fee_amt(cash advance amount), 
+
+
+
+Transaction Dataset
+stlmt_rt(settlement rate), ch_activ_term_cd(cardholder activated terminal code), bill_feature_id, sys_post_per_num, stlmt_expnt_num(settlement exponent number),
+trans_type_id(transaction type identification ,  60:cash advance, 70:payment), trans_desc(transaction description), cmo_post_cd,
+foreign_currency_code, flex_pos_mdr_amt, auth_code(authorization code), cycle_per_annum, visa_phone_id, bill_cyc_grp_id,
+trans_cd, mcc_cd (merchant category code), per_num(period number), flex_pos_ind, college_ind, person_code, card_prod_tier_cd(code to identify product tier),
+foreign_amt, mc_visa_assign_id, br_acct_nbr, merch_phone_ind, dl_tid(device level token identifer), zip_code, trans_token,
+auth_cat_ind, zip_code, transaction_amount, travel_code, dl_tid(device level token identification id), auth_amt, merchant_location,
+country code, merchant_id, member_id, bseg_id(balance segment id), 
+ 
+
+Journey Dataset
+ccid(customer id), src_nm (channel of interaction), dmn_nm(stores the category of event information),
+jrny_nm, event_nm, visit_count
+
+Now give me Different use cases for Anomaly prediction. Think out of box. Also i want detailed report on each use cases. Also create dummy dataset also and give me very detailed codes . I want all sorts of solutions (could be modeling/rule based/statistical ways ) etc. 
+
+
+
+

@@ -1,0 +1,177 @@
+Use Case 7: Detecting Violations of Regulation E – Electronic Fund Transfers
+Objective:
+Regulation E (Reg E) protects consumers when they use electronic fund transfer systems, including ATMs, debit cards, and other electronic systems. The business objective of this use case is to identify unauthorized or erroneous electronic transactions that may violate consumer rights under Regulation E, especially in the case of fraud or billing errors.
+
+Tie to Regulation:
+Regulation E governs how financial institutions handle electronic transactions and consumer complaints regarding unauthorized transactions. Banks must investigate consumer complaints within 10 business days, credit the consumer’s account within 5 business days, and follow specific procedures to handle unauthorized transactions.
+
+The objective here is to ensure compliance with Reg E by detecting unauthorized, erroneous, or potentially fraudulent transactions, allowing timely corrective actions to be taken.
+
+Data Used:
+Transaction Dataset:
+transaction_amount
+trans_desc (Transaction Description)
+auth_code (Authorization Code)
+transaction_date
+transaction_type (Transaction Type e.g., debit, credit, cash withdrawal)
+Complaint Dataset:
+complaint_description (Details of the complaint)
+complaint_status (Status of the complaint)
+case_type (Type of complaint, e.g., Unauthorized Transaction)
+Solution:
+1. EDA (Exploratory Data Analysis):
+
+Transaction Anomalies:
+We will investigate the distribution of transaction_amount to identify unusual transactions, especially large withdrawals or payments.
+Explore transaction_type and check for any anomalies in trans_desc to see if they align with unusual behavior like unauthorized transfers or discrepancies in charges.
+Complaint Data:
+Analyze complaint_description for common phrases indicating unauthorized charges, billing errors, or fraud complaints.
+Examine complaint_status and case_type to identify unresolved or outstanding complaints about unauthorized transactions.
+Visualization Examples:
+
+Histograms to detect unusual transaction amounts.
+Bar plots showing the frequency of different transaction_type and complaint_status.
+Time-series plots for transaction_date to look for sudden spikes in unauthorized transactions.
+2. Feature Engineering:
+
+We will engineer the following features from the provided datasets:
+
+Unauthorized Transaction Flag:
+
+Formula: unauthorized_flag = 1 if complaint_description contains 'unauthorized' else 0
+Why it captures anomalies: Directly flags complaints related to unauthorized transactions.
+Regulation Relevance: Identifies violations of Reg E related to unauthorized transactions.
+Transaction Frequency per Account:
+
+Formula: transaction_frequency = count(transactions) per customer ID
+Why it captures anomalies: Detects if a particular account has abnormal transaction frequency (e.g., rapid withdrawal patterns, which may indicate fraud).
+Regulation Relevance: This helps identify patterns that could indicate potential breaches in Reg E related to unauthorized transactions.
+High-Value Transaction Flag:
+
+Formula: high_value_transaction = 1 if transaction_amount > threshold else 0
+Why it captures anomalies: Flags unusually high-value transactions that could be indicative of fraudulent behavior.
+Regulation Relevance: Ensures that large transactions are properly reviewed and authorized under Reg E.
+Unusual Transaction Type Ratio:
+
+Formula: unusual_transaction_ratio = count(unusual types of transactions) / total transactions
+Why it captures anomalies: Highlights any abnormal proportion of unusual transactions, such as unrecognized transaction types.
+Regulation Relevance: Helps detect unreported or unrecognized transactions, which could breach Reg E provisions.
+Time Between Transactions:
+
+Formula: time_between_transactions = transaction_date - previous_transaction_date
+Why it captures anomalies: Unusually short times between transactions could indicate fraud or unauthorized access.
+Regulation Relevance: This helps identify if the financial institution failed to detect a problem quickly enough under Reg E.
+Failed Authorization Rate:
+
+Formula: failed_auth_rate = count(transactions where auth_code = 'failed') / total transactions
+Why it captures anomalies: High failed authorization rates could indicate a system error or an increased attempt to process unauthorized transactions.
+Regulation Relevance: Reg E requires investigation into failed or unauthorized transactions.
+Transaction Amount Deviation from Average:
+
+Formula: transaction_deviation = abs(transaction_amount - mean(transaction_amount)) / std(transaction_amount)
+Why it captures anomalies: Flags transactions significantly deviating from the average value.
+Regulation Relevance: This can detect fraud, as fraudulent transactions are often outliers in terms of amount.
+Merchant Fraud Risk Score:
+
+Formula: merchant_fraud_score = number of complaints from this merchant / total transactions with this merchant
+Why it captures anomalies: Highlights merchants with high complaint ratios, potentially indicating fraudulent activities.
+Regulation Relevance: Reg E requires monitoring for patterns that could suggest widespread fraudulent merchant activity.
+Frequency of Consumer Complaints per Account:
+
+Formula: complaint_frequency = count(complaints) per customer ID
+Why it captures anomalies: Frequent complaints from the same customer could indicate an issue with recurring unauthorized transactions.
+Regulation Relevance: Ensures compliance with Reg E’s customer protection guidelines.
+Suspicious Transaction Flag:
+
+Formula: suspicious_transaction_flag = 1 if transaction_amount > threshold and transaction_type in suspicious_types
+Why it captures anomalies: Flags suspiciously large transactions or unrecognized transaction types.
+Regulation Relevance: Reg E ensures that consumers are not unknowingly involved in fraudulent activities.
+3. Anomaly Detection Methodology:
+
+We will use both modeling and non-modeling techniques for anomaly detection.
+
+Modeling Approach:
+
+Isolation Forest or One-Class SVM: To detect outliers in transaction amounts and patterns of complaints.
+Autoencoders (for deep learning approach): To learn normal transaction patterns and flag transactions that deviate significantly.
+Non-Modeling Approach:
+
+Rule-Based Detection: Apply threshold-based rules to flag:
+High-value transactions.
+Unusual transaction types.
+Failed transaction attempts.
+Customer complaints related to unauthorized transactions.
+Clearly Define Anomaly:
+
+Anomaly: Any transaction or complaint that deviates from normal transaction behavior, such as unauthorized charges, large or frequent withdrawals, or unusual transaction types.
+Impact Measure: The number of customers impacted by fraudulent activity or unauthorized transactions, the financial risk (e.g., the value of unauthorized transactions), and the number of unresolved complaints.
+4. Python Code Implementation:
+Here is a full example of the Python code used to implement EDA, feature engineering, and anomaly detection:
+
+python
+Copy code
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.ensemble import IsolationForest
+from sklearn.preprocessing import StandardScaler
+
+# Load data (Example datasets)
+transactions = pd.read_csv('transactions.csv')
+complaints = pd.read_csv('complaints.csv')
+
+# Feature Engineering
+# 1. Unauthorized Transaction Flag
+transactions['unauthorized_flag'] = transactions['trans_desc'].apply(lambda x: 1 if 'unauthorized' in x.lower() else 0)
+
+# 2. High-Value Transaction Flag
+high_value_threshold = 10000
+transactions['high_value_transaction'] = transactions['transaction_amount'].apply(lambda x: 1 if x > high_value_threshold else 0)
+
+# 3. Transaction Frequency per Account
+transaction_frequency = transactions.groupby('ccid')['transaction_amount'].count()
+
+# 4. Unusual Transaction Type Ratio
+unusual_types = ['cash advance', 'foreign withdrawal']
+transactions['unusual_transaction_type'] = transactions['trans_desc'].apply(lambda x: 1 if any(ut in x.lower() for ut in unusual_types) else 0)
+unusual_transaction_ratio = transactions['unusual_transaction_type'].mean()
+
+# 5. Time Between Transactions
+transactions['transaction_date'] = pd.to_datetime(transactions['transaction_date'])
+transactions['time_between_transactions'] = transactions.groupby('ccid')['transaction_date'].diff().dt.total_seconds()
+
+# 6. Failed Authorization Rate
+failed_auth_rate = (transactions['auth_code'] == 'failed').mean()
+
+# 7. Transaction Amount Deviation
+mean_amount = transactions['transaction_amount'].mean()
+std_amount = transactions['transaction_amount'].std()
+transactions['transaction_deviation'] = (transactions['transaction_amount'] - mean_amount) / std_amount
+
+# Anomaly Detection (Modeling)
+# Isolation Forest for detecting anomalies
+scaler = StandardScaler()
+scaled_data = scaler.fit_transform(transactions[['transaction_amount', 'transaction_deviation']])
+
+iso_forest = IsolationForest(contamination=0.05)  # Contamination parameter depends on expected outliers
+transactions['anomaly_score'] = iso_forest.fit_predict(scaled_data)
+
+# Visualize anomalies
+plt.scatter(transactions['transaction_amount'], transactions['transaction_deviation'], c=transactions['anomaly_score'], cmap='coolwarm')
+plt.title('Anomaly Detection')
+plt.xlabel('Transaction Amount')
+plt.ylabel('Transaction Deviation')
+plt.show()
+
+# Review complaints
+complaints_related = complaints[complaints['complaint_description'].str.contains('unauthorized', case=False)]
+
+# Combine features for a final fraud risk score
+transactions['fraud_risk_score'] = transactions[['unauthorized_flag', 'high_value_transaction', 'anomaly_score']].sum(axis=1)
+
+# Display the resulting flagged transactions
+suspicious_transactions = transactions[transactions['fraud_risk_score'] >= 2]  # Arbitrary threshold for suspicion
+
+print(suspicious_transactions)
+5. Summary:
+This use case aims to identify unauthorized transactions and fraudulent behavior under Regulation E. Using a combination of feature engineering, EDA, and anomaly detection techniques like Isolation Forest and Autoencoders, the solution can flag potentially fraudulent transactions and help the bank comply with consumer protection requirements. By tracking high-value transactions, unauthorized flags, and frequent complaints, the system can identify violations of Reg E, ensuring the bank protects consumer rights effectively.

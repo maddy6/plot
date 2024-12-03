@@ -1,0 +1,744 @@
+1. Multi-Dimensional Velocity of High-Value Transactions
+Concept: Calculate how quickly high-value transactions are made across different locations (e.g., post codes, terminals, countries). If a card performs high-value transactions at multiple places in a short period, it might signal location-based anomalies.
+Formula: Rolling count of high-value transactions (>50% of credit limit) across different terminals and locations within a 1-hour interval.
+
+Python Code:
+python
+Copy code
+high_value_threshold = 0.5 * df['aqc_credit_limit']
+high_value_tx = df[df['tca_mod_amt'] > high_value_threshold]
+high_value_tx['high_value_velocity'] = high_value_tx.groupby('card_id')['tca_mod_amt'].rolling('1H').count()
+high_value_tx['unique_terminals'] = high_value_tx.groupby('card_id')['hct_term_id'].transform(lambda x: x.nunique())
+high_value_tx['unique_post_codes'] = high_value_tx.groupby('card_id')['hct_post_code'].transform(lambda x: x.nunique())
+
+
+
+
+2. Dynamic PIN Entry Change Rate with Cross-Location Detection
+Concept: Detect rapid PIN-entry attempts from distinct locations or devices. If the PIN verification attempts are inconsistent with the cardholder’s usual behavior, this could indicate brute-force or fraudulent activity.
+Formula: Count of changes in ucm_pin_verify across locations (terminals, countries) within a short period.
+
+Python Code:
+python
+Copy code
+df['pin_attempt_changes'] = df.groupby(['card_id', 'hct_term_id'])['ucm_pin_verify'].transform('nunique')
+df['unique_terminals'] = df.groupby('card_id')['hct_term_id'].transform('nunique')
+
+
+
+
+3. Cross-Merchant Spend Ratio Relative to Merchant’s Average (Anomaly Detection)
+Concept: Fraudsters may try spending in a targeted manner to evade threshold-based rules. Calculate the ratio of the transaction amount at each merchant compared to the merchant’s average, highlighting anomalies.
+Formula: tca_mod_amt / AVG(tca_mod_amt) at merchant level over the last 30 days.
+
+Python Code:
+python
+Copy code
+merchant_avg = df.groupby('hct_term_owner_name')['tca_mod_amt'].transform('mean')
+df['cross_merchant_ratio'] = df['tca_mod_amt'] / merchant_avg
+
+
+
+
+4. Complex Sequential CVV Failures with Variable Time Gap (Pattern Detection)
+Concept: Fraudsters may attempt CVV verification multiple times with irregular timing to avoid detection. This feature tracks irregular CVV failure sequences with decreasing or irregular time gaps.
+Formula: Rolling time difference between CVV failures and count of failures in past 1 hour.
+
+Python Code:
+python
+Copy code
+df['time_gap'] = df['transaction_time'].diff().dt.total_seconds()
+cvv_failures = df[df['ucm_cvv2_resp'] == 'failed']
+cvv_failures['cvv_fail_count'] = cvv_failures.groupby('card_id')['ucm_cvv2_resp'].rolling('1H').count()
+cvv_failures['avg_time_gap'] = cvv_failures.groupby('card_id')['time_gap'].transform('mean')
+
+
+
+
+5. Multi-Channel Transaction Volume Spike
+Concept: Fraudsters may exploit multiple channels (e.g., ATMs, POS, online) simultaneously. This feature detects sudden spikes across different channels.
+Formula: Rolling sum of transactions across channels (ucm_pos, hct_media) within a 2-hour period.
+
+Python Code:
+python
+Copy code
+df['multi_channel_spike'] = df.groupby('card_id')['ucm_pos'].rolling('2H').count()
+df['distinct_channels'] = df.groupby('card_id')['ucm_pos'].transform('nunique')
+
+
+
+
+6. Near-Expiry Rapid Usage Spike
+Concept: Cards nearing expiry are often exploited by fraudsters before expiration. This feature tracks high transaction volume in the final 30 days before expiration.
+Formula: Count of transactions in the last 30 days before card_exp_date.
+
+Python Code:
+python
+Copy code
+df['near_expiry_spike'] = df[df['card_exp_date'] - df['transaction_date'] < pd.Timedelta(days=30)].groupby('card_id')['transaction_date'].transform('count')
+
+
+
+
+7. Cross-Currency High Transaction Count
+Concept: Multiple high-value transactions in different currencies within a short period could signal fraudulent cross-border activity.
+Formula: Rolling count of high-value transactions in different currencies within a 1-day window.
+
+Python Code:
+python
+Copy code
+high_value_transactions = df[df['tca_mod_amt'] > 0.5 * df['aqc_credit_limit']]
+df['cross_currency_high_value_count'] = high_value_transactions.groupby('card_id')['currency'].transform(lambda x: x.rolling('1D').nunique())
+
+
+
+
+8. Irregular AVS (Address Verification) Patterns with Declining Amount
+Concept: Fraudsters may test cards with AVS mismatches, starting with low amounts and moving to high-value transactions.
+Formula: Count of AVS mismatches with incremental transaction amounts.
+
+Python Code:
+python
+Copy code
+avs_mismatch = df[(df['ucm_avs_resp'] == 'failed') & (df['tca_mod_amt'] > 0.5 * df['aqc_credit_limit'])]
+df['avs_mismatch_increasing_amt'] = avs_mismatch.groupby('card_id')['tca_mod_amt'].transform(lambda x: x.is_monotonic_increasing).sum()
+These features go beyond typical fraud detection strategies, capturing intricate, multi-dimensional interactions and behaviors. The inclusion of time-based patterns, velocity metrics, and sequence anomalies targets various sophisticated fraud patterns that are difficult to detect using conventional features.
+
+
+
+
+1. Time-Weighted Transaction Anomaly Score
+Concept: Weighs recent transactions more heavily, prioritizing anomalies based on recency. This feature detects when recent transactions deviate significantly from expected patterns.
+Formula: Sum of (tca_mod_amt / aqc_credit_limit) * weight, where weight increases for recent transactions.
+
+Python Code:
+python
+Copy code
+df['row_num'] = df.groupby('card_id')['transaction_time'].rank(ascending=False)
+df['time_weighted_anomaly'] = (df['tca_mod_amt'] / df['aqc_credit_limit']) * (2 ** (-df['row_num']))
+df['time_weighted_anomaly_score'] = df.groupby('card_id')['time_weighted_anomaly'].transform('sum')
+
+
+
+2. Sequential Decline Rate in Verification Attempts
+Concept: Detects increasing decline rates across CVV, AVS, and PIN verifications, especially useful for detecting brute-force attacks.
+Formula: Count of sequential declines where each decline in ucm_cvv2_resp, ucm_avs_resp, or ucm_pin_verify is greater than the previous.
+
+Python Code:
+python
+Copy code
+df['cvv_decline'] = (df['ucm_cvv2_resp'] == 'failed').astype(int)
+df['avs_decline'] = (df['ucm_avs_resp'] == 'failed').astype(int)
+df['pin_decline'] = (df['ucm_pin_verify'] == 'failed').astype(int)
+df['sequential_decline_rate'] = df.groupby('card_id')[['cvv_decline', 'avs_decline', 'pin_decline']].cumsum()
+
+
+
+3. Anomalous Location Sequence Probability (ALSP)
+Concept: Calculates the probability of a card moving between highly unlikely locations based on past sequences, revealing location-based anomalies.
+Formula: (1 / count of frequent transitions between post codes or countries).
+
+Python Code:
+python
+Copy code
+df['location_count'] = df.groupby('card_id')['hct_post_code'].transform('nunique')
+df['location_anomaly'] = 1 / df['location_count']
+
+
+4. Cross-Channel Fraudulent Behavior Spike Detection
+Concept: Tracks simultaneous high-transaction patterns across different channels (e.g., POS, online, ATM) within a short period.
+Formula: Count of transactions across ucm_pos, hct_media channels within a 1-hour window.
+
+Python Code:
+python
+Copy code
+cross_channel = df.groupby(['card_id', 'ucm_pos', 'hct_media']).size()
+df['cross_channel_spike'] = cross_channel.groupby('card_id').transform('sum')
+
+
+
+5. Temporal AVS-POS Sequence Anomaly
+Concept: Detects anomalies where AVS and POS verifications don’t follow a typical sequence (e.g., a failed AVS should usually lead to a voided POS attempt).
+Formula: Count of unusual AVS-POS sequences where AVS response is “failed” but transaction continues.
+
+Python Code:
+python
+Copy code
+df['avs_pos_sequence_anomaly'] = ((df['ucm_avs_resp'] == 'failed') & (df['ucm_pos'] == 'approved')).astype(int)
+df['avs_pos_sequence_anomaly_count'] = df.groupby('card_id')['avs_pos_sequence_anomaly'].transform('sum')
+
+
+
+
+
+
+7. Card Expiration-Merchant Spike (Expiration Exploitation)
+Concept: Detects an unusual spike in transaction volume at a single merchant as card expiration nears.
+Formula: Count of transactions per merchant within 30 days of card_exp_date.
+
+Python Code:
+python
+Copy code
+df['near_expiration'] = (df['card_exp_date'] - df['transaction_date'] < pd.Timedelta(days=30)).astype(int)
+expiration_spike = df.groupby(['card_id', 'hct_term_owner_name'])['near_expiration'].sum()
+df['near_expiration_merchant_spike'] = expiration_spike
+
+
+
+
+
+
+9. High-Frequency Terminal Sequence Anomaly
+Concept: Checks for rapid re-use of terminals that diverges from a card’s historical usage.
+Formula: Rolling count of transactions at specific terminal IDs within a 1-hour window, filtered for terminals not commonly used by the card.
+
+Python Code:
+python
+Copy code
+df['terminal_use'] = df.groupby('card_id')['hct_term_id'].rolling('1H').count()
+high_freq_anomaly = df[df['terminal_use'] > 3]
+
+
+
+
+
+1. Adaptive Spending Deviation (ASD)
+Concept: Measures deviations in spending relative to recent adaptive patterns, capturing instances where a fraudster tries to mimic normal spending behavior but with slight shifts.
+Formula: ABS(tca_mod_amt - adaptive_avg_amt) / adaptive_avg_amt, where adaptive_avg_amt is the exponentially weighted moving average (EWMA) of tca_mod_amt.
+
+Python Code:
+python
+Copy code
+df['adaptive_avg_amt'] = df.groupby('card_id')['tca_mod_amt'].transform(lambda x: x.ewm(span=5).mean())
+df['adaptive_spending_deviation'] = abs(df['tca_mod_amt'] - df['adaptive_avg_amt']) / df['adaptive_avg_amt']
+
+
+
+
+2. Distance-Weighted Transaction Similarity (DWTS)
+Concept: Combines transaction amount, merchant category, and terminal ID distance to find anomalies based on weighted similarity to previous transactions.
+Formula: Weighted sum of |tca_mod_amt_diff| + |hct_mer_mcc_diff| + |hct_term_id_diff| for recent transactions.
+
+Python Code:
+python
+Copy code
+df['tca_mod_amt_diff'] = df.groupby('card_id')['tca_mod_amt'].diff()
+df['hct_mer_mcc_diff'] = df.groupby('card_id')['hct_mer_mcc'].diff()
+df['hct_term_id_diff'] = df.groupby('card_id')['hct_term_id'].diff()
+df['dwts'] = abs(df['tca_mod_amt_diff']) + abs(df['hct_mer_mcc_diff']) + abs(df['hct_term_id_diff'])
+
+
+
+
+3. Cumulative Positional Integrity Violation (CPIV)
+Concept: Tracks violations in a card’s expected location pattern by comparing current and historical positional data.
+Formula: (current_post_code - avg_past_post_code) / stddev_past_post_code, where avg_past_post_code and stddev_past_post_code are based on historical post codes.
+
+Python Code:
+python
+Copy code
+df['avg_post_code'] = df.groupby('card_id')['hct_post_code'].transform('mean')
+df['stddev_post_code'] = df.groupby('card_id')['hct_post_code'].transform('std')
+df['cpiv'] = (df['hct_post_code'] - df['avg_post_code']) / df['stddev_post_code']
+
+
+
+
+4. Fraud Amplification Factor (FAF)
+Concept: Amplifies fraud suspicion by combining flags from high-risk variables. If multiple risky indicators (like low balance, high transaction amount, failed CVV) align, this feature increases.
+Formula: SUM(flagged high-risk indicators).
+
+Python Code:
+python
+Copy code
+df['low_balance'] = (df['aqc_cash_bal'] < 100).astype(int)
+df['high_amt'] = (df['tca_mod_amt'] > df['aqc_credit_limit'] * 0.9).astype(int)
+df['failed_cvv'] = (df['ucm_cvv2_resp'] == 'failed').astype(int)
+df['faf'] = df['low_balance'] + df['high_amt'] + df['failed_cvv']
+
+
+
+5. Temporal POS Cluster Anomaly (TPCA)
+Concept: Calculates the temporal frequency of transactions across different POS terminals to identify if a card is being used excessively in unusual POS clusters.
+Formula: COUNT(DISTINCT ucm_pos) / COUNT(total transactions in POS) over a specific timeframe.
+
+Python Code:
+python
+Copy code
+df['pos_cluster'] = df.groupby('card_id')['ucm_pos'].transform('nunique')
+df['total_pos'] = df.groupby('card_id')['ucm_pos'].transform('count')
+df['tpca'] = df['pos_cluster'] / df['total_pos']
+
+
+
+6. Event Interval Variability (EIV)
+Concept: Measures inconsistency in the time interval between consecutive transactions, indicating abnormal spending frequency.
+Formula: Standard deviation of time difference between consecutive transactions.
+Hive Query:
+sql
+Copy code
+SELECT card_id,
+       STDDEV(UNIX_TIMESTAMP(transaction_time) - LAG(UNIX_TIMESTAMP(transaction_time)) OVER (PARTITION BY card_id ORDER BY transaction_time)) AS eiv
+FROM transactions;
+Python Code:
+python
+Copy code
+df['time_diff'] = df.groupby('card_id')['transaction_time'].diff().dt.total_seconds()
+df['eiv'] = df.groupby('card_id')['time_diff'].transform('std')
+
+
+---------------------------------------------------------------------------------------
+
+7. Dynamic Authorization Failure Pattern Score (DAFPS)
+Concept: Tracks abnormal patterns in authorization failures by monitoring multiple verification responses (e.g., CVV, AVS) for outliers.
+Formula: Count of sequential ucm_cvv2_resp, ucm_avs_resp, and ucm_pin_verify fails within a 30-minute window.
+
+Python Code:
+python
+Copy code
+df['cvv_fail'] = (df['ucm_cvv2_resp'] == 'failed').astype(int)
+df['avs_fail'] = (df['ucm_avs_resp'] == 'failed').astype(int)
+df['pin_fail'] = (df['ucm_pin_verify'] == 'failed').astype(int)
+df['dafps'] = df['cvv_fail'] + df['avs_fail'] + df['pin_fail']
+
+
+
+8. Terminal Velocity Deviation (TVD)
+Concept: Measures drastic changes in the velocity of transactions at different terminals, which could indicate card cloning.
+Formula: SUM(absolute change in transactions at each terminal within 1-hour windows).
+
+Python Code:
+python
+Copy code
+df['terminal_txn_count'] = df.groupby(['card_id', 'hct_term_id']).cumcount()
+df['tvd'] = df.groupby('card_id')['terminal_txn_count'].transform('diff').abs()
+
+
+9. Cross-Verification Anomaly Index (CVAI)
+Concept: Combines failed CVV, AVS, and PIN verifications into a single indicator, highlighting authentication anomalies.
+Formula: Weighted sum of failed verification responses.
+
+Python Code:
+python
+Copy code
+df['cvai'] = 1.5 * (df['cvv_fail'] + df['avs_fail'] + df['pin_fail'])
+
+
+
+
+1. Clustered Terminal Anomaly Rate (CTAR)
+Concept: Measures transaction concentration around a specific terminal cluster compared to the average. High values indicate potential fraud patterns where the fraudster repeatedly uses a limited set of terminals.
+Formula: (Number of transactions in top terminal cluster) / (Total transactions).
+
+python
+Copy code
+top_terminals = df.groupby(['card_id', 'hct_term_id']).size().groupby(level=0).idxmax()
+df['top_terminal'] = df['hct_term_id'].isin(top_terminals)
+df['ctar'] = df.groupby('card_id')['top_terminal'].transform('mean')
+
+
+
+
+
+
+6. Merchant-Centric Velocity Score (MCVS)
+Concept: Measures the transaction frequency with specific merchants to detect potential collusion or targeted attacks.
+Formula: COUNT(transaction) / COUNT(merchant) within a specific timeframe.
+
+Python Code:
+python
+Copy code
+df['unique_merchants'] = df.groupby('card_id')['hct_term_owner_name'].transform('nunique')
+df['mcvs'] = df.groupby('card_id')['tca_merch_amt'].transform('count') / df['unique_merchants']
+
+
+
+
+
+
+8. Multi-Mode CVV Failure Pattern (MMCVFP)
+Concept: Identifies multiple failed CVV attempts across modes, signaling repeated attempts by fraudsters.
+Formula: COUNT(cvv_failed) across ucm_cvv2_resp & ucm_cvv_cvc.
+Hive Query:
+sql
+Copy code
+SELECT card_id,
+       SUM(CASE WHEN ucm_cvv2_resp = 'failed' OR ucm_cvv_cvc = 'failed' THEN 1 ELSE 0 END) AS mmcvfp
+FROM transactions
+GROUP BY card_id;
+Python Code:
+python
+Copy code
+df['cvv_failed'] = ((df['ucm_cvv2_resp'] == 'failed') | (df['ucm_cvv_cvc'] == 'failed')).astype(int)
+df['mmcvfp'] = df.groupby('card_id')['cvv_failed'].transform('sum')
+
+
+---------------------------------------------------------------------------------------
+
+9. Seasonal Anomaly Index (SAI)
+Concept: Detects deviations from seasonal transaction patterns (e.g., holiday or weekend spending spikes).
+Formula: ABS(avg_weekday_amt - avg_weekend_amt) / (avg_weekday_amt + avg_weekend_amt).
+
+Python Code:
+python
+Copy code
+df['weekend_flag'] = df['transaction_date'].dt.dayofweek.isin([5, 6]).astype(int)
+avg_weekend_amt = df[df['weekend_flag'] == 1]['tca_mod_amt'].mean()
+avg_weekday_amt = df[df['weekend_flag'] == 0]['tca_mod_amt'].mean()
+df['sai'] = abs(avg_weekday_amt - avg_weekend_amt) / (avg_weekday_amt + avg_weekend_amt)
+
+
+
+
+
+6. High-Frequency Low-Value Ratio (HFLVR)
+Concept: The ratio of low-value transactions (e.g., < $10) to the total number of transactions in a short timeframe. Frequent low-value transactions could indicate a probing attack.
+Formula: Low-Value Transactions / Total Transactions within the last 10 minutes.
+Hive Query:
+sql
+Copy code
+SELECT card_id,
+       COUNT(*) FILTER (WHERE tca_mod_amt < 10) / COUNT(*) AS hflvr
+FROM transactions
+WHERE transaction_time > CURRENT_TIMESTAMP - INTERVAL '10' MINUTE
+GROUP BY card_id;
+Python Code:
+python
+Copy code
+df['low_value'] = (df['tca_mod_amt'] < 10).astype(int)
+df['hflvr'] = df.groupby('card_id')['low_value'].transform('mean')
+
+
+
+
+
+# Feature Engineering
+
+data['fee_to_limit_ratio'] = data['total all fees amt'] / data['total credit limit']
+
+data['interest_efficiency'] = data['interest'] / data['net interest amt']
+
+data['revenue_fee_ratio'] = data['revenue amortized amt'] / data['total all fees amt']
+
+data['bad_check_to_fee_ratio'] = data['bad chk fee'] / data['total net fees amt']
+
+
+
+
+
+
+
+
+I am working on a Anomaly Detection for Regulatory Obligations 
+
+
+Problem Statement:
+USPB (a department in Citibank) operates in a rapidly evolving regulatory and control environment. Banks are under increasing scrutiny for breaches in compliance related to customer obligations, regulatory obligations, and financial stability.
+
+To proactively address these challenges, we aim to develop anomaly detection solutions that identify signals in the data, helping to uncover gaps before they become significant issues. The focus is on identifying breakdowns in our obligations as aligned with regulations and terms/conditions of our customer engagements.
+
+
+---
+
+Successful Outcome:
+The solution should meet the following criteria:
+
+1. Identify issues in the data exhaust that indicate a breakdown in obligations.
+
+
+2. Replicability for repeated use in similar datasets.
+
+
+3. Noise separation to distinguish material breakages from false positives.
+
+
+4. Innovative approach in detecting anomalies.
+
+
+5. Completeness, including documentation, reasoning, clean code, runtime needs, assumptions, and risk identification.
+
+
+
+
+---
+
+Evaluation Criteria:
+
+Data Landscape:
+Fines in the industry over the last 10 years highlight the criticality of anomaly detection:
+
+1. Citi: $733MM+ (UDAAP) for misrepresenting fees and charging customers for services.
+
+
+2. Citi: $335MM+ (Reg Z) for failing to re-evaluate APRs for eligible accounts.
+
+
+3. Citi: $29MM+ (TCPA) for unauthorized robocalls.
+
+
+4. Industry peers, including BoFA, Chase, and Wells Fargo, have also faced significant fines.
+
+
+
+
+Available Datasets:
+
+Profitabilty Dataset:
+port aff_rebate_amt
+port tot pts amt
+cost cust serv call amt
+cost rten call amt
+cost_sale call amt
+cost alloc cust serv amt
+cost fix pymt amt
+cost vari pymt amt
+cost vari pstmt amt
+cost alloc tran serv amt,
+cost dlnq coll amt
+cost exst crd mbr amt
+expns acq cost amt
+cost fix oth amt
+cost vari oth amt
+cost glob mkt amt
+total expense amt
+acc aff rebate amt
+goto fixed bal amt
+cash goto apr cd dsc
+cash goto apr rt
+ua amnl fee
+amort acq balc fee amt
+bal typ cof amt
+recovery asset sale amt new
+amort balcon fee amt new
+per num
+costco net sales amt
+ncm amt
+net interest amt
+nim amt
+revenue amortized amt
+total all fees amt
+total net fees amt
+statement credit limit
+total expense limit
+acct_off rebate amt
+fail rbp ind
+fail rbp cd
+lst pymt dte
+assn interchange amt
+ccc bal amt
+risk fixed bal amt
+risk var bal amt
+intro bal amt
+goto cash fixed bal amt
+goto var bal amt
+cash goto apr rt
+out ca bal amt
+out purch int amt
+amort annual fee amt
+earn pts
+tot mon reedem amt
+return amt
+foreign sales ind
+tot foreign sales amt
+amort fee amt
+ca credit limit
+ceil credt limit
+acct stat id
+cmf punitive id,
+out ca bal amt
+out purch int amt
+purch pay amt
+recvr amt
+prior ca bal amt
+prior purch amt
+prior purch bal amt
+forcst cof
+ca amt
+ca bal amt
+ca intr amt
+ca pay amt
+purch bal amt
+purch ct
+purch intr amt
+purch pay amt
+temp key (unique key)
+interest
+interchange
+late fees
+cash adv fee
+ua balc fee
+bad chk fee
+aff rebate
+cof
+gcl
+recovery asset sale amt
+recovery
+balc fee wo
+interest wo
+purch amt
+total credit limit
+
+
+
+
+Complaint Dataset:
+account_number, agent_funtional_group(product service type sub group), case_edit_date, case_id, case_type, CCID (consumer ID), 
+closed_case_entitlement_level, closed_date, closed_notes, complaint_create_date, complaint_description, complaint_status, 
+escalation_group, lob_code, postal_code, product_type, regulatory_classfication_1, regulatory_classfication_2, regulatory_classfication_3,
+state_code, acct_open_date, ack_received_comments(acknowdgement received comments), ack_received_date, address_line1, address_line2,
+age_of_edit, agent_dept, agent_email, agent_emp_class, agent_goc_code, agent_id, agent_lacation, agent_manager_code, agent_manager_email,
+agent_name, agent_skill, bmps_closed_notes, case_owner_agent_dept, case_owner_agent_id,case_owner_agent_location,city, closed_case_agent_dept,
+closed_case_agent_email, closed_case_agent_country_code, closed_case_agent_id, closed_case_agent_skill,closed_notes, closed_reason,
+contect_notes, closed_notes_date, CSIID, county_code, 
+
+
+
+Billing Info
+loan_cap_amt, ocl_fee_3x_ct(over credit limit fees 3x count), cust_disput_purch_amt, acct_hist_11_sts_cd, pt_cli_cd, fix_pymt_eff_date,
+relf_cd, delnq_stat_cur_mon, casa_tag_13_ind, ca_fee_amt(cash advance amount), 
+
+
+
+
+Transaction Dataset
+stlmt_rt(settlement rate), ch_activ_term_cd(cardholder activated terminal code), bill_feature_id, sys_post_per_num, stlmt_expnt_num(settlement exponent number),
+trans_type_id(transaction type identification ,  60:cash advance, 70:payment), trans_desc(transaction description), cmo_post_cd,
+foreign_currency_code, flex_pos_mdr_amt, auth_code(authorization code), cycle_per_annum, visa_phone_id, bill_cyc_grp_id,
+trans_cd, mcc_cd (merchant category code), per_num(period number), flex_pos_ind, college_ind, person_code, card_prod_tier_cd(code to identify product tier),
+foreign_amt, mc_visa_assign_id, br_acct_nbr, merch_phone_ind, dl_tid(device level token identifer), zip_code, trans_token,
+auth_cat_ind, zip_code, transaction_amount, travel_code, dl_tid(device level token identification id), auth_amt, merchant_location,
+country code, merchant_id, member_id, bseg_id(balance segment id), 
+ 
+
+Journey Dataset
+ccid(customer id), src_nm (channel of interaction), dmn_nm(stores the category of event information),
+jrny_nm, event_nm, visit_count 
+
+
+
+
+---
+
+Expected Deliverables:
+Develop methods/techniques for anomaly detection using:
+
+1. Modeling (Unsupervised): Algorithms for clustering and outlier detection.
+
+
+2. Non-Modeling (Rule-Based): Define rules and thresholds.
+
+
+3. Hybrid Methods: Combining modeling and rule-based logic.
+
+
+
+
+Your solution should include:
+
+Use Cases: Define out-of-the-box use cases targeting specific regulations (e.g., TCPA, UDAAP, Reg Z).
+
+Feature Engineering: Detailed features derived from the provided datasets, explaining why and how each feature helps detect anomalies.
+
+EDA: Exploratory Data Analysis to support feature engineering and method selection.
+
+Implementation: Python code implementing the solution. Ensure clarity, scalability, and adherence to the dataset variables.
+
+
+
+---
+
+Specific Use Case Guidance:
+Focus on regulations such as:
+
+TCPA, Reg Z, UDAAP, Reg E, Reg CC, Reg D
+
+Bank Secrecy Act (BSA), Dodd-Frank Act, AML Regulations
+
+Gramm-Leach-Bliley Act (GLBA), FDCPA, FCRA, ECOA, HMDA
+
+California Consumer Privacy Act (CCPA), Sarbanes-Oxley Act (SOX)
+
+
+For each use case, include the following structure:
+
+
+---
+
+Use Case Structure
+
+Objective:
+
+Business problem or area being solved.
+
+Tie to the relevant regulation (e.g., TCPA for unauthorized robocalls).
+
+
+Data Used:
+
+Specify which datasets and variables are used (e.g., transaction_amount, visit_count).
+
+
+Solution:
+
+1. EDA:
+
+Visualizations and summary statistics to understand data patterns.
+
+
+
+2. Feature Engineering:
+
+Include at least 15 unique features, derived exclusively from the provided datasets. 
+
+For each feature, provide:
+
+Name and formula for creation.
+
+Why it captures anomalies.
+
+How it relates to the regulation or problem.
+
+
+
+
+3. Anomaly Detection Methodology:
+
+Modeling (e.g., Isolation Forest, Autoencoders, PCA).
+
+Non-Modeling (e.g., rule-based thresholds).
+
+Clearly define "anomaly" and measures of impact (e.g., customers impacted, financial risk).
+
+
+
+4. Python Code:
+
+Include detailed implementation for:
+
+EDA.
+
+Feature engineering.
+
+Anomaly detection (both modeling and rule-based).
+
+
+
+
+5. Assumptions:
+
+Highlight dependencies and assumptions.
+
+
+
+6. Results & Impacts:
+
+Quantify anomalies detected (volume, $ impact).
+
+Explain relevance to business outcomes.
+
+P.S- Only use variables from my dataset only strictly. No other variables should be used.
+
+
+
+
+

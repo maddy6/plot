@@ -1,0 +1,369 @@
+Complete List of Features (After Dropping Unwanted Columns)
+1. Derived Features
+These features were created from the available data after dropping the specified columns:
+
+Purchase to Payment Ratio
+Formula: purchase_amt / purch_pay_amt
+
+Cash Advance Utilization
+Formula: ca_amt / ca_bal_amt
+
+Prior Purchase Impact
+Formula: prior_purch_amt / prior_purch_bal_amt
+
+Asset Recovery Rate
+Formula: recovery_asset_sale_amt_new / total_expense_amt
+
+Amortized Fee to Interest Rate
+Formula: amort_acq_bal_fee_amt / interest
+
+Payment to Balance Ratio
+Formula: purch_pay_amt / purch_bal_amt
+
+Risk Balance to Fixed Balance Ratio
+Formula: risk_fixed_bal_amt / fixed_bal_amt
+
+Fee Adjustment Ratio
+Formula: fee_adjustment_amt / total_expense_amt
+
+Prior Balance to Current Balance Ratio
+Formula: prior_ca_bal_amt / ca_bal_amt
+
+Amortization to Purchase Ratio
+Formula: amort_fee_amt / purch_amt
+
+2. Existing Features
+These are features that are already present in the dataset and can be used for anomaly detection without modification:
+
+purchase_amt
+Purchase amount.
+
+purch_pay_amt
+Purchase payment amount.
+
+ca_amt
+Cash advance amount.
+
+ca_bal_amt
+Cash advance balance amount.
+
+prior_purch_amt
+Previous purchase amount.
+
+prior_purch_bal_amt
+Previous purchase balance amount.
+
+recovery_asset_sale_amt_new
+Asset sale recovery amount.
+
+total_expense_amt
+Total expenses amount.
+
+interest
+Interest charged.
+
+purch_bal_amt
+Purchase balance amount.
+
+fee_adjustment_amt
+Fee adjustment amount.
+
+fixed_bal_amt
+Fixed balance amount.
+
+prior_ca_bal_amt
+Prior cash advance balance amount.
+
+
+
+
+
+import pandas as pd
+from sklearn.ensemble import IsolationForest
+from sklearn.preprocessing import StandardScaler
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Load the dataset
+data = pd.read_csv('your_dataset.csv')
+
+# Dropping the unwanted columns with 99% missing values
+columns_to_drop = ['total all fees amt', 'net interest amt', 'revenue amortized amt', 'total credit limit']
+data.drop(columns=columns_to_drop, inplace=True)
+
+# Feature Engineering: Creating new features
+data['purchase_to_payment_ratio'] = data['purchase_amt'] / data['purch_pay_amt']
+data['cash_advance_utilization'] = data['ca_amt'] / data['ca_bal_amt']
+data['prior_purchase_impact'] = data['prior_purch_amt'] / data['prior_purch_bal_amt']
+data['asset_recovery_rate'] = data['recovery_asset_sale_amt_new'] / data['total_expense_amt']
+data['amortized_fee_to_interest_rate'] = data['amort_acq_bal_fee_amt'] / data['interest']
+data['payment_to_balance_ratio'] = data['purch_pay_amt'] / data['purch_bal_amt']
+data['risk_balance_to_fixed_balance_ratio'] = data['risk_fixed_bal_amt'] / data['fixed_bal_amt']
+data['fee_adjustment_ratio'] = data['fee_adjustment_amt'] / data['total_expense_amt']
+data['prior_balance_to_current_balance_ratio'] = data['prior_ca_bal_amt'] / data['ca_bal_amt']
+data['amortization_to_purchase_ratio'] = data['amort_fee_amt'] / data['purch_amt']
+
+# Handling missing values by filling them with the median
+data.fillna(data.median(), inplace=True)
+
+# Standardizing the features for anomaly detection
+features = [
+    'purchase_to_payment_ratio', 'cash_advance_utilization', 'prior_purchase_impact', 
+    'asset_recovery_rate', 'amortized_fee_to_interest_rate', 'payment_to_balance_ratio', 
+    'risk_balance_to_fixed_balance_ratio', 'fee_adjustment_ratio', 
+    'prior_balance_to_current_balance_ratio', 'amortization_to_purchase_ratio',
+    'purchase_amt', 'purch_pay_amt', 'ca_amt', 'ca_bal_amt', 'prior_purch_amt', 'prior_purch_bal_amt',
+    'recovery_asset_sale_amt_new', 'total_expense_amt', 'interest', 'purch_bal_amt',
+    'fee_adjustment_amt', 'fixed_bal_amt', 'prior_ca_bal_amt'
+]
+
+# Standardizing the features
+scaler = StandardScaler()
+data_scaled = scaler.fit_transform(data[features])
+
+# Anomaly detection using Isolation Forest
+model = IsolationForest(n_estimators=100, contamination=0.05)
+model.fit(data_scaled)
+
+# Predict anomalies
+data['anomaly'] = model.predict(data_scaled)
+
+# Filter anomalies (where anomaly == -1)
+anomalies = data[data['anomaly'] == -1]
+
+# Visualization of anomalies
+plt.figure(figsize=(10, 6))
+sns.scatterplot(x='purchase_to_payment_ratio', y='cash_advance_utilization', data=data, hue='anomaly', palette={-1: 'red', 1: 'blue'})
+plt.title('Anomaly Detection in APR Re-evaluations')
+plt.show()
+
+# Investigating anomalies
+print("Anomalies detected:")
+print(anomalies[features + ['anomaly']])
+
+# Save anomalies to CSV
+anomalies.to_csv('detected_anomalies.csv', index=False)
+
+
+
+Explanation of Combined Code:
+Data Loading and Preprocessing:
+
+The dataset is loaded into data using pandas.read_csv().
+We drop the columns that have 99% missing values (as you mentioned), including total all fees amt, net interest amt, revenue amortized amt, and total credit limit.
+Feature Engineering:
+
+New features are created based on the available columns, including ratios between purchase amounts, cash advances, fee adjustments, balances, etc.
+Missing values are handled by filling them with the median of the column.
+Anomaly Detection:
+
+The features selected for anomaly detection are standardized using StandardScaler to normalize them for the Isolation Forest model.
+Isolation Forest is used for anomaly detection, where contamination=0.05 specifies the proportion of anomalies expected in the dataset.
+Visualization:
+
+A scatter plot is generated using Seaborn to visually inspect anomalies by plotting purchase_to_payment_ratio vs cash_advance_utilization. Anomalies are marked in red, and normal data points are marked in blue.
+Result Handling:
+
+Anomalies are filtered and saved into a separate DataFrame, which is then exported to a CSV file for further analysis.
+The anomalies detected are printed for inspection.
+
+
+
+
+Feature List and Explanation
+purchase_to_payment_ratio = purchase_amt / purch_pay_amt
+
+Why it captures anomalies: This ratio indicates how much a customer is purchasing relative to how much they are paying. A high ratio may indicate that a customer is accumulating more debt than they are paying off, which could signal issues like incorrect APR adjustments or miscalculations in re-evaluations.
+Relation to regulation: Reg Z mandates that APR calculations must be fair and transparent. A high purchase-to-payment ratio could signal discrepancies in the APR re-evaluation process that need to be checked for compliance.
+cash_advance_utilization = ca_amt / ca_bal_amt
+
+Why it captures anomalies: This feature measures the utilization of cash advances relative to the available cash advance balance. If the ratio is unusually high, it could indicate that the APR applied to cash advances is incorrect, potentially violating Reg Z guidelines.
+Relation to regulation: Ensures cash advances are charged at the correct APR as per Reg Z and that cash advances are not being used excessively in a way that could lead to unfair fees or interest charges.
+prior_purchase_impact = prior_purch_amt / prior_purch_bal_amt
+
+Why it captures anomalies: This ratio shows the relationship between previous purchases and balances. It helps identify if prior balances were not properly adjusted in the re-evaluation of APR or if there were errors in calculating interest based on prior outstanding balances.
+Relation to regulation: Reg Z requires that APR is accurately re-evaluated when new purchases or balance transfers occur. Discrepancies between purchases and balances could indicate violations of these regulations.
+asset_recovery_rate = recovery_asset_sale_amt_new / total_expense_amt
+
+Why it captures anomalies: This ratio shows how much asset recovery (e.g., from loan write-offs) is being applied relative to the total expenses. A lower recovery rate could indicate that the financial institution is not properly accounting for asset sales or misapplying APR.
+Relation to regulation: Reg Z includes provisions on accurate reporting and recovery of assets, which can affect APR re-evaluations. Anomalies in this rate might suggest improper APR calculations or compliance issues.
+amortized_fee_to_interest_rate = amort_acq_bal_fee_amt / interest
+
+Why it captures anomalies: This ratio tracks the relationship between the amortized acquisition fees and the interest charged. Anomalies in this ratio can suggest that the financial institution is applying fees or interest in a way that is inconsistent with the terms laid out by Reg Z.
+Relation to regulation: Reg Z requires that fees and interest be clearly disclosed and applied accurately. A mismatch in this ratio could highlight potential violations regarding fee and interest calculations.
+payment_to_balance_ratio = purch_pay_amt / purch_bal_amt
+
+Why it captures anomalies: This feature measures how much the customer is paying relative to their outstanding balance. A lower ratio might suggest that APR charges are escalating quickly, indicating that the APR re-evaluation process may be flawed or non-compliant.
+Relation to regulation: Reg Z mandates that credit card issuers apply APRs in a way that ensures fair payments. If the payment-to-balance ratio is disproportionately low, it could indicate that APR adjustments are not being applied fairly.
+risk_balance_to_fixed_balance_ratio = risk_fixed_bal_amt / fixed_bal_amt
+
+Why it captures anomalies: This ratio shows how much of the fixed balance is being classified as risky. A higher ratio could indicate that the APR is being applied incorrectly, particularly to balances that may have been reassessed incorrectly during APR re-evaluations.
+Relation to regulation: Reg Z ensures that credit risk is correctly assessed and that APRs are applied based on accurate risk levels. This ratio helps identify any misapplications of APR based on incorrect risk classifications.
+fee_adjustment_ratio = fee_adjustment_amt / total_expense_amt
+
+Why it captures anomalies: This ratio tracks how much of the total expenses are being adjusted for fees. Anomalies could indicate that fees are being incorrectly applied or adjusted during APR re-evaluation, leading to potential violations of Reg Z.
+Relation to regulation: Reg Z requires that all fees be properly disclosed and accounted for in APR calculations. Discrepancies in fee adjustments could indicate non-compliance in the re-evaluation process.
+prior_balance_to_current_balance_ratio = prior_ca_bal_amt / ca_bal_amt
+
+Why it captures anomalies: This ratio indicates how the prior cash advance balance compares to the current balance. A large discrepancy could suggest that APR re-evaluations on cash advances are being misapplied, potentially violating Reg Z's requirements for transparent APR adjustments.
+Relation to regulation: Reg Z mandates that APR calculations should reflect current and past balances accurately. This ratio helps identify if there’s an issue with the APR re-evaluation process.
+amortization_to_purchase_ratio = amort_fee_amt / purch_amt
+
+Why it captures anomalies: This ratio shows how much amortized fee is being charged relative to the total purchase amount. A high ratio may signal that APR charges are being calculated incorrectly, potentially leading to unfair or excessive fees being applied to the customer.
+Relation to regulation: Reg Z ensures that fees and charges are applied fairly and disclosed accurately. Anomalies in this ratio could indicate that the APR re-evaluation process is not compliant with these requirements.
+
+
+
+
+-------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------
+
+
+Use Case Structure
+Objective:
+Business Problem or Area Being Solved: The objective is to identify anomalies in the APR (Annual Percentage Rate) re-evaluation process for credit card accounts. APR misapplications can lead to incorrect charges, customer dissatisfaction, and potential regulatory violations.
+
+Tie to the Relevant Regulation: The use case is directly tied to Regulation Z (Reg Z), which governs APR disclosures and adjustments. Reg Z requires credit card issuers to apply APRs in a fair, transparent, and consistent manner. This includes proper re-evaluation of APR during certain events (e.g., late payments, account re-assessment) to ensure that consumers are not charged more than what is legally allowed. Identifying APR misapplications or anomalies ensures compliance with Reg Z, preventing financial harm to customers and legal risks to the institution.
+
+Data Used:
+Datasets Used:
+Profitability dataset, which contains financial data related to customer accounts.
+Variables Used:
+purch_amt (Purchase Amount)
+purch_pay_amt (Purchase Payment Amount)
+ca_amt (Cash Advance Amount)
+ca_bal_amt (Cash Advance Balance Amount)
+prior_purch_amt (Prior Purchase Amount)
+prior_purch_bal_amt (Prior Purchase Balance Amount)
+recovery_asset_sale_amt_new (Recovered Asset Sale Amount)
+amort_acq_bal_fee_amt (Amortized Acquisition Fee Amount)
+purch_bal_amt (Purchase Balance Amount)
+fee_adjustment_amt (Fee Adjustment Amount)
+interest (Interest Amount)
+fixed_bal_amt (Fixed Balance Amount)
+total_expense_amt (Total Expense Amount)
+credit_limit (Credit Limit)
+Solution:
+1. EDA:
+Visualizations and Summary Statistics:
+
+Distribution Plots: To visualize the distribution of key variables like purchase amount, interest, cash advance balances, and prior balances.
+Correlation Heatmap: To understand relationships between key features (e.g., between interest rates and purchase amounts).
+Missing Value Analysis: To ensure proper handling of missing values and check for patterns of data availability.
+Outlier Detection: Using boxplots and z-scores to detect any outliers in critical variables like fees, balances, and interest rates.
+Summary Statistics:
+
+Summary statistics like mean, median, standard deviation, and quantiles are calculated for each variable to provide an overview of data distribution and central tendencies.
+2. Feature Engineering:
+The following features were engineered to capture anomalies in APR re-evaluations:
+
+purchase_to_payment_ratio = purch_amt / purch_pay_amt
+
+Why it captures anomalies: Indicates if the customer is accumulating more debt than they are paying off, suggesting potential issues in APR adjustments.
+Relation to regulation: Ensures APR is re-evaluated correctly based on a customer's purchasing behavior.
+cash_advance_utilization = ca_amt / ca_bal_amt
+
+Why it captures anomalies: Measures the utilization of cash advances relative to the available balance, indicating if APR is being applied correctly to cash advances.
+Relation to regulation: Ensures that cash advances are charged with the correct APR, as stipulated by Reg Z.
+prior_purchase_impact = prior_purch_amt / prior_purch_bal_amt
+
+Why it captures anomalies: Tracks if prior purchases are being properly considered in the APR re-evaluation, helping detect miscalculations.
+Relation to regulation: Ensures APR is based on prior purchase and balance history, as required by Reg Z.
+asset_recovery_rate = recovery_asset_sale_amt_new / total_expense_amt
+
+Why it captures anomalies: Anomalies in asset recovery may suggest that APR re-evaluations are not correctly accounting for recovered assets.
+Relation to regulation: Ensures recovered assets are accounted for correctly in APR calculations.
+amortized_fee_to_interest_rate = amort_acq_bal_fee_amt / interest
+
+Why it captures anomalies: This ratio measures if acquisition fees are proportionally applied to interest amounts, indicating if APR calculations are being handled fairly.
+Relation to regulation: Ensures that interest and fees are applied and disclosed accurately in line with Reg Z.
+payment_to_balance_ratio = purch_pay_amt / purch_bal_amt
+
+Why it captures anomalies: Tracks if payments are sufficient relative to balances. If payments are too low, it may indicate that APR adjustments are escalating too quickly.
+Relation to regulation: Ensures APR is applied properly to balances and payments, in compliance with Reg Z.
+risk_balance_to_fixed_balance_ratio = risk_fixed_bal_amt / fixed_bal_amt
+
+Why it captures anomalies: Identifies if risky balances are being inappropriately categorized as fixed balances, which could impact APR re-evaluations.
+Relation to regulation: Ensures APR is applied based on accurate risk classifications, in accordance with Reg Z.
+fee_adjustment_ratio = fee_adjustment_amt / total_expense_amt
+
+Why it captures anomalies: Helps detect any discrepancies in fee adjustments relative to total expenses, suggesting potential miscalculations in APR.
+Relation to regulation: Ensures fees are accurately adjusted and accounted for in APR recalculations as required by Reg Z.
+prior_balance_to_current_balance_ratio = prior_ca_bal_amt / ca_bal_amt
+
+Why it captures anomalies: Identifies discrepancies in prior and current cash advance balances, which could suggest issues in APR adjustments.
+Relation to regulation: Ensures that APR re-evaluations are conducted properly based on historical and current balances.
+amortization_to_purchase_ratio = amort_fee_amt / purch_amt
+
+Why it captures anomalies: Helps detect if fees are being disproportionately applied to purchases, signaling potential APR misapplications.
+Relation to regulation: Ensures that APRs are applied proportionally and fairly to purchases as per Reg Z.
+3. Anomaly Detection Methodology:
+Modeling (e.g., Isolation Forest, Autoencoders, PCA):
+
+Isolation Forest: To identify outliers in the financial data, particularly focusing on outlier purchase/payment ratios, interest rates, and fee adjustments.
+Autoencoders: A neural network-based approach to reconstruct input features and detect anomalies based on reconstruction errors.
+PCA (Principal Component Analysis): To reduce dimensionality and detect anomalies in a lower-dimensional space by focusing on the most important features.
+Non-Modeling (e.g., Rule-based thresholds):
+
+Rule-based Detection: Setting manual thresholds for specific features, such as purchase-to-payment ratios or cash advance utilization, beyond which the data point is flagged as an anomaly.
+Clear Definition of Anomalies: An anomaly is defined as any data point where the APR calculation deviates significantly from expected patterns or regulatory compliance rules.
+Impact Measures:
+
+Customers Impacted: Number of customers identified with anomalies in APR re-evaluations.
+Financial Risk: Potential financial impact due to incorrect APR application (e.g., overcharging or undercharging customers).
+4. Python Code:
+Include Detailed Implementation:
+
+python
+Copy code
+# EDA: Visualizations, summary statistics, missing value analysis, and outlier detection
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+import numpy as np
+
+# Read data
+data = pd.read_csv('profitability_data.csv')
+
+# EDA: Summary statistics
+print(data.describe())
+
+# Missing values
+print(data.isnull().sum())
+
+# Visualizations: Distribution of key variables
+sns.histplot(data['purch_amt'])
+plt.title('Distribution of Purchase Amounts')
+plt.show()
+
+# Correlation Heatmap
+corr = data.corr()
+sns.heatmap(corr, annot=True, cmap='coolwarm')
+plt.show()
+
+# Anomaly Detection: Rule-based and Model-based (Isolation Forest)
+from sklearn.ensemble import IsolationForest
+
+# Rule-based: Define a threshold for purchase-to-payment ratio
+threshold = 0.5
+data['purchase_to_payment_anomaly'] = data['purchase_to_payment_ratio'] > threshold
+
+# Isolation Forest Model
+iso_forest = IsolationForest(contamination=0.05)
+data['iso_forest_anomaly'] = iso_forest.fit_predict(data[['purchase_to_payment_ratio', 'ca_amt', 'purch_bal_amt']])
+
+# Feature Engineering: Calculate custom features
+data['purchase_to_payment_ratio'] = data['purch_amt'] / data['purch_pay_amt']
+data['cash_advance_utilization'] = data['ca_amt'] / data['ca_bal_amt']
+# ... and similarly for other features
+
+# Anomaly Flagging: Apply thresholds and model-based detection for anomalies
+5. Assumptions:
+Data Quality: Assumes that the data provided is accurate, with no significant data corruption.
+Missing Values: Assumes missing values in critical columns are either imputed or dropped based on prior analysis.
+Anomaly Definition: Anomalies are defined as outliers in financial features, significant deviations from expected APR re-evaluations, or instances of non-compliance with Reg Z.
+6. Results & Impacts:
+Quantification of Anomalies Detected: After applying anomaly detection, we flagged X% of customer accounts as anomalies, with an estimated $Y financial impact due to potential APR miscalculations.
+Relevance to Business Outcomes: Identifying these anomalies ensures that the financial institution remains compliant with Reg Z, avoiding legal consequences and protecting customer trust by ensuring fair APR applications.
+
+

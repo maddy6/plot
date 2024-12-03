@@ -1,0 +1,308 @@
+Use Case 2: Detecting UDAAP (Unfair, Deceptive, or Abusive Acts or Practices)
+Objective:
+The objective of this use case is to identify potential instances of unfair, deceptive, or abusive acts or practices (UDAAP) within customer interactions, transactions, or fee assessments. These practices often result from manipulative fee structures or deceptive marketing, potentially leading to regulatory penalties.
+
+Tie to the Relevant Regulation:
+UDAAP (Unfair, Deceptive, or Abusive Acts or Practices): This regulation ensures that financial institutions do not engage in practices that harm consumers or are deemed unethical or deceptive.
+Focus will be on detecting behaviors that may be harmful to customers, such as excessive fees, misleading terms, or manipulation of financial products.
+Data Used:
+The solution will focus on the following datasets and their respective variables:
+
+Profitability Dataset:
+
+cost alloc tran serv amt, cost sale call amt, cost dlnq coll amt, cost exst crd mbr amt, expns acq cost amt, cost fix pymt amt, cost vari pymt amt, total expense amt, acct_off rebate amt, fail rbp ind, purch amt, total credit limit, etc.
+Complaint Dataset:
+
+case_id, case_type, complaint_description, complaint_status, regulatory_classfication_1, state_code, closed_date, account_number, etc.
+Billing Info Dataset:
+
+ocl_fee_3x_ct, cust_disput_purch_amt, acct_hist_11_sts_cd, ca_fee_amt, etc.
+Transaction Dataset:
+
+transaction_amount, trans_desc, trans_type_id, auth_code, cycle_per_annum, visa_phone_id, etc.
+Journey Dataset:
+
+ccid, event_nm, visit_count, src_nm, jrny_nm, etc.
+Solution:
+1. EDA (Exploratory Data Analysis):
+The EDA will provide an understanding of the data patterns related to unfair or deceptive practices. Key aspects of the EDA will include:
+
+Complaint Analysis: Understanding the frequency and type of complaints, focusing on complaints related to fees, transaction disputes, or other perceived unfair practices.
+Fee Distribution: Investigating the distribution of fees across customer segments to identify potential patterns of unfair practices.
+Customer Journey Patterns: Analyzing the behavior of customers, especially around points where they encounter fees or charges.
+2. Feature Engineering:
+Here are at least 15 features derived from the datasets that will help in identifying UDAAP-related anomalies:
+
+Fee to Transaction Ratio
+
+Formula: fee_to_transaction_ratio = total fees / transaction_amount
+Why it captures anomalies: High fees relative to transaction amounts may indicate excessive charges, which could be seen as deceptive under UDAAP.
+Relation to regulation: Relates to UDAAP by identifying disproportionate charges.
+Fee to Credit Limit Ratio
+
+Formula: fee_to_credit_limit_ratio = total fees / total credit limit
+Why it captures anomalies: Tracks how fees scale with the available credit, which helps detect potentially abusive fee practices.
+Relation to regulation: Identifies excessive fees or penalties, potentially violating UDAAP.
+Disputed Transaction Rate
+
+Formula: disputed_transaction_rate = cust_disput_purch_amt / total transaction_amount
+Why it captures anomalies: A high rate of disputed transactions may indicate deceptive or misleading practices in transaction processing or terms.
+Relation to regulation: Could signify unfair or deceptive transaction processing.
+Complaint Frequency per Account
+
+Formula: complaint_frequency = count(complaints) / count(accounts)
+Why it captures anomalies: Identifies whether certain accounts or segments are disproportionately affected by complaints, which may indicate systemic issues.
+Relation to regulation: Points to potential UDAAP violations if certain accounts are repeatedly complaining about fees or practices.
+Fee Consistency Across Accounts
+
+Formula: fee_consistency = stddev(total fees per account)
+Why it captures anomalies: A high variation in fees across similar accounts may indicate unfair or inconsistent pricing.
+Relation to regulation: UDAAP regulations require consistent and transparent fees.
+Over-limit Fees to Credit Limit Ratio
+
+Formula: over_limit_fee_ratio = ocl_fee_3x_ct / total credit limit
+Why it captures anomalies: Tracks how often customers are being charged over-limit fees relative to their credit limits.
+Relation to regulation: Helps identify if over-limit fees are being applied excessively, which could be a form of deceptive or abusive practice.
+Late Fee to Purchase Ratio
+
+Formula: late_fee_to_purchase_ratio = late fees / purch_amt
+Why it captures anomalies: High late fees relative to the amount purchased may indicate unfair practices.
+Relation to regulation: Detects if customers are being unfairly charged for late payments.
+Discrepancy Between Credit Limit and Purchases
+
+Formula: credit_limit_discrepancy = total credit limit - purch_amt
+Why it captures anomalies: Flags customers whose purchases are significantly lower than their credit limit, possibly due to deceptive restrictions on their accounts.
+Relation to regulation: Ensures credit is being used fairly and not limited unfairly.
+Excessive Reward Fees
+
+Formula: reward_fee_ratio = aff rebate / purch_amt
+Why it captures anomalies: Detects if excessive reward fees are being charged in relation to purchases.
+Relation to regulation: Points to potentially deceptive marketing or unfair reward structures under UDAAP.
+Customer Feedback Sentiment
+
+Formula: feedback_sentiment = sentiment(complaint_description)
+Why it captures anomalies: Analyzes customer sentiment in complaints to flag instances of dissatisfaction regarding fees, services, or terms.
+Relation to regulation: Directly linked to detecting deceptive or unfair customer experiences under UDAAP.
+Transactional Fee Imbalance
+
+Formula: trans_fee_imbalance = transaction_amount - transaction fee
+Why it captures anomalies: Flags instances where fees disproportionately impact smaller transactions.
+Relation to regulation: Helps detect deceptive fee structures.
+Disproportionate Rebate to Purchases
+
+Formula: rebate_to_purchase_ratio = port aff_rebate_amt / purch_amt
+Why it captures anomalies: Analyzes whether rebates are being given out of proportion to purchases.
+Relation to regulation: Points to potential UDAAP violations if rebates are misleading or improperly applied.
+Transaction Type Frequency
+
+Formula: transaction_type_frequency = count(trans_type_id) / total transactions
+Why it captures anomalies: Unusual spikes in certain transaction types (e.g., cash advances or purchases) may indicate deceptive or abusive behavior.
+Relation to regulation: Could reveal unintended or unauthorized product offerings under UDAAP.
+Account Re-activation to Complaint Ratio
+
+Formula: reactivation_complaint_ratio = count(account_reactivation) / count(complaints)
+Why it captures anomalies: High complaint rates associated with reactivated accounts could point to unfair practices in account management.
+Relation to regulation: Helps identify potential violations of UDAAP through reactivation policies.
+Fee Application Consistency
+
+Formula: fee_application_consistency = count(complaints about fees) / total fee charges
+Why it captures anomalies: Flags inconsistencies in fee applications across customers.
+Relation to regulation: Relates directly to ensuring fairness in fee structures under UDAAP.
+3. Anomaly Detection Methodology:
+Modeling (Unsupervised):
+
+Isolation Forest: Used for detecting outliers based on features like fee_to_transaction_ratio, late_fee_to_purchase_ratio, and transaction_fee_imbalance.
+DBSCAN: A density-based clustering method useful for detecting spatially anomalous points in transactional data.
+Non-Modeling (Rule-Based):
+
+Rule-Based Thresholds: Set thresholds on key features such as fee_to_transaction_ratio, disputed_transaction_rate, complaint_frequency, etc., to flag anomalies that could indicate unfair practices.
+Business Rules: Create rules around expected behavior for fees, complaints, and transaction processing (e.g., no fee should exceed 10% of a customer’s monthly spend).
+Hybrid Approach: Combine the unsupervised anomaly models with rule-based detection to reduce the false positive rate and detect hidden patterns that are outside known thresholds.
+
+Defining Anomaly: An anomaly in this use case is any behavior that:
+
+Deviates from expected customer fee patterns.
+Leads to customer complaints related to fee structures, disputes, or deceptive practices.
+Exhibits a high ratio of disputes to transaction amounts, signaling potential deceptive practices.
+Impact Metrics:
+
+Number of UDAAP violations detected.
+Financial impact related to unjust fee collections or deceptive practices.
+Customer dissatisfaction and potential churn due to unfair or deceptive practices.
+4. Python Code:
+The Python code for feature engineering, anomaly detection, and visualization will follow similar steps as outlined for the previous use case. The key difference lies in the specific features related to fees, complaints, and transaction behavior relevant to detecting UDAAP violations.
+
+Assumptions:
+The datasets are clean and pre-processed.
+Anomalies are defined as deviations from expected fee structures, complaint behavior, and transaction patterns.
+The model assumes that detected anomalies may indicate regulatory violations but requires manual review.
+Results & Impacts:
+Volume of Anomalies Detected: Quantify the number of flagged UDAAP violations.
+Financial Risk: Estimate the cost or impact of unfair or deceptive practices if not addressed.
+Customer Impact: Identify which customer segments are disproportionately affected by such practices.
+This solution will help identify and prevent practices that could lead to regulatory penalties for UDAAP violations.
+
+
+
+
+
+
+You said:
+I want full python code please
+ChatGPT said:
+ChatGPT
+Here's the full Python code for Use Case 2: Detecting UDAAP (Unfair, Deceptive, or Abusive Acts or Practices) using the Profitability, Complaint, Billing Info, Transaction, and Journey datasets.
+
+Python Code for Detecting UDAAP
+python
+Copy code
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.ensemble import IsolationForest
+from sklearn.cluster import DBSCAN
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import silhouette_score
+
+# Load datasets (replace 'path_to_file' with actual file paths)
+profitability_df = pd.read_csv('path_to_profitability_data.csv')
+complaint_df = pd.read_csv('path_to_complaint_data.csv')
+billing_df = pd.read_csv('path_to_billing_data.csv')
+transaction_df = pd.read_csv('path_to_transaction_data.csv')
+journey_df = pd.read_csv('path_to_journey_data.csv')
+
+# Step 1: EDA (Exploratory Data Analysis)
+
+# Visualize missing data
+def missing_data_visualization(df):
+    missing_data = df.isnull().sum().sort_values(ascending=False)
+    missing_percentage = (df.isnull().sum() / df.isnull().count() * 100).sort_values(ascending=False)
+    missing_df = pd.concat([missing_data, missing_percentage], axis=1, keys=['Total', 'Percentage'])
+    return missing_df
+
+# Check missing data in datasets
+print("Missing data in Profitability Dataset:")
+print(missing_data_visualization(profitability_df))
+
+print("Missing data in Complaint Dataset:")
+print(missing_data_visualization(complaint_df))
+
+# Step 2: Feature Engineering
+
+# Calculate Fee to Transaction Ratio
+profitability_df['fee_to_transaction_ratio'] = profitability_df['total fees'] / profitability_df['transaction_amount']
+
+# Calculate Fee to Credit Limit Ratio
+profitability_df['fee_to_credit_limit_ratio'] = profitability_df['total fees'] / profitability_df['total_credit_limit']
+
+# Calculate Disputed Transaction Rate
+complaint_df['disputed_transaction_rate'] = complaint_df['cust_disput_purch_amt'] / profitability_df['total transaction_amount']
+
+# Complaint Frequency per Account
+complaint_freq = complaint_df.groupby('account_number').size().reset_index(name='complaint_frequency')
+
+# Fee Consistency Across Accounts
+fee_std = profitability_df.groupby('account_number')['total fees'].std().reset_index(name='fee_consistency')
+
+# Over-limit Fees to Credit Limit Ratio
+billing_df['over_limit_fee_ratio'] = billing_df['ocl_fee_3x_ct'] / billing_df['total_credit_limit']
+
+# Late Fee to Purchase Ratio
+billing_df['late_fee_to_purchase_ratio'] = billing_df['late fees'] / billing_df['purch_amt']
+
+# Account Re-activation to Complaint Ratio (assumes 'account_reactivation' feature)
+account_reactivation = complaint_df.groupby('account_number')['account_reactivation'].sum().reset_index(name='account_reactivation')
+account_reactivation_to_complaints = pd.merge(account_reactivation, complaint_freq, on='account_number')
+account_reactivation_to_complaints['reactivation_complaint_ratio'] = account_reactivation_to_complaints['account_reactivation'] / account_reactivation_to_complaints['complaint_frequency']
+
+# Discrepancy Between Credit Limit and Purchases
+profitability_df['credit_limit_discrepancy'] = profitability_df['total_credit_limit'] - profitability_df['purch_amt']
+
+# Disproportionate Rebate to Purchases
+profitability_df['rebate_to_purchase_ratio'] = profitability_df['port_aff_rebate_amt'] / profitability_df['purch_amt']
+
+# Customer Feedback Sentiment (dummy example, replace with actual sentiment analysis if available)
+complaint_df['feedback_sentiment'] = complaint_df['complaint_description'].apply(lambda x: 1 if 'positive' in x else 0)
+
+# Fee Application Consistency
+fee_consistency = profitability_df.groupby('account_number')['total fees'].apply(lambda x: np.std(x)).reset_index(name='fee_application_consistency')
+
+# Transaction Type Frequency
+trans_type_freq = transaction_df['trans_type_id'].value_counts().reset_index(name='transaction_type_frequency')
+trans_type_freq.columns = ['trans_type_id', 'transaction_type_frequency']
+
+# Merge all features
+merged_data = profitability_df.merge(complaint_freq, on='account_number', how='left')
+merged_data = merged_data.merge(fee_std, on='account_number', how='left')
+merged_data = merged_data.merge(account_reactivation_to_complaints[['account_number', 'reactivation_complaint_ratio']], on='account_number', how='left')
+merged_data = merged_data.merge(billing_df[['account_number', 'over_limit_fee_ratio', 'late_fee_to_purchase_ratio']], on='account_number', how='left')
+merged_data = merged_data.merge(fee_consistency, on='account_number', how='left')
+merged_data = merged_data.merge(trans_type_freq[['trans_type_id', 'transaction_type_frequency']], on='trans_type_id', how='left')
+
+# Step 3: Anomaly Detection
+
+# Normalize data for anomaly detection models
+scaler = StandardScaler()
+scaled_data = scaler.fit_transform(merged_data[['fee_to_transaction_ratio', 'fee_to_credit_limit_ratio', 'disputed_transaction_rate', 
+                                                'complaint_frequency', 'fee_consistency', 'over_limit_fee_ratio', 
+                                                'late_fee_to_purchase_ratio', 'reactivation_complaint_ratio', 
+                                                'credit_limit_discrepancy', 'rebate_to_purchase_ratio', 
+                                                'feedback_sentiment', 'fee_application_consistency']])
+
+# Isolation Forest for anomaly detection
+iso_forest = IsolationForest(contamination=0.05)
+merged_data['isolation_forest_anomaly'] = iso_forest.fit_predict(scaled_data)
+merged_data['isolation_forest_anomaly'] = merged_data['isolation_forest_anomaly'].apply(lambda x: 1 if x == -1 else 0)
+
+# DBSCAN for clustering anomalies
+dbscan = DBSCAN(eps=0.5, min_samples=5)
+merged_data['dbscan_anomaly'] = dbscan.fit_predict(scaled_data)
+merged_data['dbscan_anomaly'] = merged_data['dbscan_anomaly'].apply(lambda x: 1 if x == -1 else 0)
+
+# Hybrid Approach (Combine Isolation Forest and DBSCAN)
+merged_data['hybrid_anomaly'] = merged_data[['isolation_forest_anomaly', 'dbscan_anomaly']].sum(axis=1)
+merged_data['hybrid_anomaly'] = merged_data['hybrid_anomaly'].apply(lambda x: 1 if x > 0 else 0)
+
+# Step 4: Results & Impacts
+
+# Visualize anomalies detected
+sns.countplot(x='hybrid_anomaly', data=merged_data)
+plt.title("Anomaly Detection (UDAAP) - Hybrid Approach")
+plt.show()
+
+# Quantify anomalies detected
+anomalies_detected = merged_data[merged_data['hybrid_anomaly'] == 1]
+print(f"Anomalies Detected: {anomalies_detected.shape[0]}")
+
+# Show anomalies impact (e.g., financial risk, customer dissatisfaction)
+# Placeholder: quantify financial impact based on anomalies
+financial_impact = anomalies_detected['total fees'].sum()
+print(f"Estimated Financial Impact of Anomalies: ${financial_impact:,.2f}")
+
+# Show customer complaints related to anomalies
+customer_complaints = complaint_df[complaint_df['account_number'].isin(anomalies_detected['account_number'])]
+print(f"Total Customer Complaints Related to Anomalies: {customer_complaints.shape[0]}")
+Explanation of the Code:
+Data Loading & EDA:
+
+Data from multiple datasets (Profitability, Complaint, Billing, Transaction, Journey) are loaded using pandas.
+Missing data visualization helps identify and handle missing values before feature engineering.
+Feature Engineering:
+
+Several features are created to capture potential anomalies, such as fee_to_transaction_ratio, complaint_frequency, rebate_to_purchase_ratio, and others.
+These features are calculated from the raw data to identify unusual fee structures, transaction patterns, and complaint behavior.
+Anomaly Detection:
+
+Isolation Forest: An unsupervised model used to detect anomalies based on the engineered features.
+DBSCAN: A clustering-based anomaly detection algorithm that identifies dense clusters and marks points outside these clusters as anomalies.
+Hybrid Approach: Combines the results of both Isolation Forest and DBSCAN to identify anomalies.
+Visualization & Impact Quantification:
+
+A countplot is created to visualize the anomalies detected by the hybrid approach.
+The financial impact is estimated by summing the total fees associated with anomalies, providing an indication of the potential loss or harm caused by these anomalies.
+Complaints related to the detected anomalies are filtered and displayed.
+Assumptions:
+The data files are cleaned and formatted correctly.
+Missing data or outliers are handled in advance (this can be done with imputation or removal based on business rules).
+The "complaint_description" field is assumed to contain keywords for sentiment analysis, but for real-world applications, a more sophisticated NLP model could be used.

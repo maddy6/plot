@@ -1,0 +1,93 @@
+port aff_rebate_amt
+port tot pts amt
+cost cust serv call amt
+cost rten call amt
+cost_sale call amt
+cost alloc cust serv amt
+cost fix pymt amt
+cost vari pymt amt
+cost vari pstmt amt
+cost alloc tran serv amt,
+cost dlnq coll amt
+cost exst crd mbr amt
+expns acq cost amt
+cost fix oth amt
+cost vari oth amt
+cost glob mkt amt
+total expense amt
+acc aff rebate amt
+goto fixed bal amt
+cash goto apr cd dsc
+cash goto apr rt
+ua amnl fee
+amort acq balc fee amt
+bal typ cof amt
+recovery asset sale amt new
+amort balcon fee amt new
+per num
+costco net sales amt
+ncm amt
+net interest amt
+nim amt
+revenue amortized amt
+total all fees amt
+total net fees amt
+statement credit limit
+total expense limit
+acct_off rebate amt
+fail rbp ind
+fail rbp cd
+lst pymt dte
+assn interchange amt
+ccc bal amt
+risk fixed bal amt
+risk var bal amt
+intro bal amt
+goto cash fixed bal amt
+goto var bal amt
+cash goto apr rt
+out ca bal amt
+out purch int amt
+amort annual fee amt
+earn pts
+tot mon reedem amt
+return amt
+foreign sales ind
+tot foreign sales amt
+amort fee amt
+ca credit limit
+ceil credt limit
+acct stat id
+cmf punitive id,
+out ca bal amt
+out purch int amt
+purch pay amt
+recvr amt
+prior ca bal amt
+prior purch amt
+prior purch bal amt
+forcst cof
+ca amt
+ca bal amt
+ca intr amt
+ca pay amt
+purch bal amt
+purch ct
+purch intr amt
+purch pay amt
+temp key (unique key)
+interest
+interchange
+late fees
+cash adv fee
+ua balc fee
+bad chk fee
+aff rebate
+cof
+gcl
+recovery asset sale amt
+recovery
+balc fee wo
+interest wo
+purch amt
+total credit limit

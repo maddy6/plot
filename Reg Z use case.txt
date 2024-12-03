@@ -1,0 +1,155 @@
+Use Case 3: Detecting Issues in APR Re-evaluation (Reg Z)
+Objective:
+The goal of this use case is to detect potential violations of Regulation Z, which mandates that lenders must re-evaluate the APR (Annual Percentage Rate) for eligible accounts at least once a year or when certain conditions change. A failure to perform this re-evaluation could lead to customer dissatisfaction, compliance violations, and financial penalties.
+
+The objective is to identify cases where APR re-evaluation may not have been performed for customers who meet specific criteria, such as changes in credit limits, balances, or other financial indicators. By detecting such anomalies, the bank can proactively address these gaps and avoid regulatory penalties.
+
+Data Used:
+Profitability Dataset:
+
+total_credit_limit
+total_balance
+cash_goto_apr_rt
+port_aff_rebate_amt
+revenue_amortized_amt
+total_expense_amt
+cost_exst_crd_mbr_amt
+Transaction Dataset:
+
+transaction_amount
+trans_type_id
+trans_desc
+Complaint Dataset:
+
+case_id
+complaint_status
+account_number
+complaint_description
+Billing Info Dataset:
+
+late_fees
+delnq_stat_cur_mon
+fix_pymt_eff_date
+Solution:
+1. EDA (Exploratory Data Analysis):
+We will start by analyzing the data, checking for missing values, and visualizing trends related to APR, credit limits, and balances.
+
+python
+Copy code
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+# Load the relevant datasets
+profitability_df = pd.read_csv('path_to_profitability_data.csv')
+transaction_df = pd.read_csv('path_to_transaction_data.csv')
+complaint_df = pd.read_csv('path_to_complaint_data.csv')
+billing_df = pd.read_csv('path_to_billing_data.csv')
+
+# Visualizing missing data
+def missing_data_visualization(df):
+    missing_data = df.isnull().sum().sort_values(ascending=False)
+    missing_percentage = (df.isnull().sum() / df.isnull().count() * 100).sort_values(ascending=False)
+    missing_df = pd.concat([missing_data, missing_percentage], axis=1, keys=['Total', 'Percentage'])
+    return missing_df
+
+# Visualize missing data for each dataset
+print("Missing data in Profitability Dataset:")
+print(missing_data_visualization(profitability_df))
+
+print("Missing data in Transaction Dataset:")
+print(missing_data_visualization(transaction_df))
+2. Feature Engineering:
+Create new features that help identify gaps in APR re-evaluation:
+
+APR Variance: Difference between the current APR and the expected APR.
+Credit Limit Changes: Accounts with significant credit limit changes that should trigger APR re-evaluation.
+Late Payment History: Accounts with frequent late payments, which may need APR adjustments.
+Complaint Rate: Complaints related to APR, which could indicate re-evaluation issues.
+Total Balance Change: Accounts with substantial balance fluctuations that could indicate an APR re-evaluation need.
+python
+Copy code
+# Calculate APR variance (expected APR - current APR)
+profitability_df['apr_variance'] = profitability_df['cash_goto_apr_rt'] - profitability_df['expected_apr']
+
+# Flag accounts with significant credit limit changes
+profitability_df['credit_limit_change'] = profitability_df['total_credit_limit'].pct_change()
+
+# Identify late payment history
+billing_df['late_payment_flag'] = billing_df['delnq_stat_cur_mon'].apply(lambda x: 1 if x > 1 else 0)
+
+# Calculate complaint rate related to APR
+complaints_related_to_apr = complaint_df[complaint_df['complaint_description'].str.contains("APR", case=False)]
+complaint_rate = complaints_related_to_apr.groupby('account_number').size().reset_index(name='complaint_rate')
+
+# Total balance changes for identifying accounts needing APR re-evaluation
+profitability_df['balance_change'] = profitability_df['total_balance'].pct_change()
+3. Anomaly Detection Methodology:
+We will use Isolation Forest for anomaly detection in the context of Regulation Z, where we identify accounts where APR re-evaluation may not have occurred based on the engineered features.
+
+python
+Copy code
+from sklearn.ensemble import IsolationForest
+from sklearn.preprocessing import StandardScaler
+
+# Scale the features for anomaly detection
+scaler = StandardScaler()
+features = profitability_df[['apr_variance', 'credit_limit_change', 'balance_change', 'complaint_rate']]
+scaled_features = scaler.fit_transform(features)
+
+# Apply Isolation Forest for anomaly detection
+iso_forest = IsolationForest(contamination=0.05)
+profitability_df['apr_re_evaluation_anomaly'] = iso_forest.fit_predict(scaled_features)
+
+# Mark anomalies with 1, normal cases with 0
+profitability_df['apr_re_evaluation_anomaly'] = profitability_df['apr_re_evaluation_anomaly'].apply(lambda x: 1 if x == -1 else 0)
+4. Rule-Based Detection (Non-Modeling):
+In addition to the machine learning model, we will define rule-based thresholds:
+
+APR variance > 5%: Flag if the APR variance is greater than 5% for more than 3 months.
+Late payments > 2 in last 6 months: Flag if there have been more than 2 late payments in the last 6 months.
+Credit limit change > 20%: Flag accounts with significant credit limit changes.
+python
+Copy code
+# Rule-based anomaly detection
+profitability_df['rule_based_anomaly'] = 0
+
+# Rule 1: APR variance greater than 5% for more than 3 months
+profitability_df['rule_based_anomaly'] += (profitability_df['apr_variance'].abs() > 0.05).astype(int)
+
+# Rule 2: Late payments greater than 2 in the last 6 months
+billing_df['late_payment_count'] = billing_df.groupby('account_number')['late_payment_flag'].rolling(window=6).sum().reset_index(drop=True)
+profitability_df['rule_based_anomaly'] += (billing_df['late_payment_count'] > 2).astype(int)
+
+# Rule 3: Credit limit change greater than 20%
+profitability_df['rule_based_anomaly'] += (profitability_df['credit_limit_change'] > 0.2).astype(int)
+
+# Combine both anomaly detection methods (modeling + rule-based)
+profitability_df['hybrid_anomaly'] = profitability_df[['apr_re_evaluation_anomaly', 'rule_based_anomaly']].sum(axis=1)
+profitability_df['hybrid_anomaly'] = profitability_df['hybrid_anomaly'].apply(lambda x: 1 if x > 0 else 0)
+5. Results & Impacts:
+Finally, visualize and quantify the detected anomalies. Measure the potential impact on customers and financial outcomes based on the anomalies.
+
+python
+Copy code
+# Visualize anomalies detected
+sns.countplot(x='hybrid_anomaly', data=profitability_df)
+plt.title("Anomaly Detection - APR Re-evaluation (Reg Z)")
+plt.show()
+
+# Quantify anomalies detected
+anomalies_detected = profitability_df[profitability_df['hybrid_anomaly'] == 1]
+print(f"Anomalies Detected: {anomalies_detected.shape[0]}")
+
+# Quantify financial impact (using total fees or other relevant metric)
+financial_impact = anomalies_detected['total_expense_amt'].sum()
+print(f"Estimated Financial Impact of Anomalies: ${financial_impact:,.2f}")
+
+# Complaints related to detected anomalies
+customer_complaints = complaint_df[complaint_df['account_number'].isin(anomalies_detected['account_number'])]
+print(f"Total Complaints Related to Anomalies: {customer_complaints.shape[0]}")
+Assumptions:
+The APR data and related features are correctly populated for all accounts.
+The datasets are pre-processed (e.g., missing values handled, date formatting).
+The financial impact (e.g., total_expense_amt) is being used as an estimate for customer harm in case of non-compliance.
+This code provides a comprehensive pipeline for detecting potential issues with APR re-evaluation under Regulation Z. It uses both machine learning (Isolation Forest) and rule-based anomaly detection to identify accounts that may require APR re-evaluation. The results highlight potential financial impacts and customer dissatisfaction, helping to ensure compliance with Reg Z.
