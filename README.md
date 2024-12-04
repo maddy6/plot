@@ -3,6 +3,32 @@ import h2o
 # Initialize H2O
 h2o.init()
 
+# Sample df (master dataframe)
+
+# Function to map "Count" based on "ID"
+def map_count(id_val):
+    # Look up the value in df1 where "ID" matches
+    matching_row = df1[df1["ID"] == id_val, "Count"]
+    # If a match exists, return the "Count" value, otherwise return None
+    return matching_row[0, 0] if matching_row.nrows > 0 else None
+
+# Use H2O's apply to map the "Count" column from df1 to df based on "ID"
+df["Count"] = df["ID"].apply(map_count)
+
+# Show the result
+print("After mapping Count from df1:")
+df.show()
+
+
+
+
+
+
+import h2o
+
+# Initialize H2O
+h2o.init()
+
 # Master dataframe (df)
 df = h2o.H2OFrame({
     "ID": [101, 102, 103, 101, 102],
