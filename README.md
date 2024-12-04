@@ -1,14 +1,18 @@
-# Convert df1 to pandas for easier lookup
-df1_pandas = df1.as_data_frame()
+# Extract unique IDs from df1 as a Python list
+unique_ids = df1["ID"].as_data_frame(use_pandas=False)[1]
 
-# Create a dictionary for ID-to-Count mapping
-id_to_count = dict(zip(df1_pandas["ID"], df1_pandas["Count"]))
+# Filter rows in df where ID matches the unique IDs
+mask = df["ID"].isin(unique_ids)
 
-# Add the "Count" column to df
-df["Count"] = df["ID"].as_data_frame().apply(lambda x: id_to_count.get(x[0], None), axis=1)
+# Map "Count" from df1 to df by matching IDs
+df["Count"] = mask.ifelse(
+    df1[df["ID"] == df1["ID"], "Count"],
+    None
+)
 
 print("After mapping Count from df1:")
-print(df)
+df.show()
+
 
 
 
