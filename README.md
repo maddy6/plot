@@ -1,3 +1,14 @@
+
+
+# Join df with df1 on "ID" (left join to retain all rows in df)
+df_with_count = df.cbind(df1[df["ID"] == df1["ID"], "Count"])
+
+# Join df with df2 on "Table1"
+df_with_xyz = df_with_count.cbind(df2[df["Table1"] == df2["Table1"], "Xyz"])
+
+
+
+
 # Extract unique IDs from df1 as a Python list
 unique_ids = df1["ID"].as_data_frame(use_pandas=False)[1]
 
