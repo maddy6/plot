@@ -1,4 +1,33 @@
 
+import h2o
+
+# Initialize H2O
+h2o.init()
+
+# Master dataframe (df)
+df = h2o.H2OFrame({
+    "ID": [101, 102, 103, 101, 102],
+    "Table1": ["A", "B", "C", "A", "B"],
+    "Table2": ["X", "Y", "Z", "X", "Y"],
+    "Table3": [5, 10, 15, 20, 25]
+})
+
+# df1 with ID and Count
+df1 = h2o.H2OFrame({
+    "ID": [101, 102],
+    "Count": [20, 30]
+})
+
+# Perform left join between df and df1 based on "ID"
+df["Count"] = df["ID"].map(dict(zip(df1["ID"].as_data_frame()["ID"], df1["Count"].as_data_frame()["Count"])))
+print("After mapping Count from df1:")
+df.show()
+
+
+
+
+
+
 
 # Join df with df1 on "ID" (left join to retain all rows in df)
 df_with_count = df.cbind(df1[df["ID"] == df1["ID"], "Count"])
