@@ -4,19 +4,45 @@ import h2o
 h2o.init()
 
 # Sample df (master dataframe)
+df = h2o.H2OFrame({
+    "ID": [101, 102, 103, 101, 102],
+    "Table1": ["A", "B", "C", "A", "B"],
+    "Table2": ["X", "Y", "Z", "X", "Y"],
+    "Table3": [5, 10, 15, 20, 25]
+})
 
-# Function to map "Count" based on "ID"
-def map_count(id_val):
-    # Look up the value in df1 where "ID" matches
-    matching_row = df1[df1["ID"] == id_val, "Count"]
-    # If a match exists, return the "Count" value, otherwise return None
-    return matching_row[0, 0] if matching_row.nrows > 0 else None
+# Sample df1 (lookup dataframe for ID -> Count)
+df1 = h2o.H2OFrame({
+    "ID": [101, 102],
+    "Count": [20, 30]
+})
 
-# Use H2O's apply to map the "Count" column from df1 to df based on "ID"
-df["Count"] = df["ID"].apply(map_count)
+# Sample df2 (lookup dataframe for Table1 -> Xyz)
+df2 = h2o.H2OFrame({
+    "Table1": ["A", "B"],
+    "Xyz": [100, 200]
+})
+
+# Convert df1 and df2 to Python dictionaries for fast lookup
+count_dict = {row["ID"]: row["Count"] for row in df1.as_data_frame().itertuples()}
+xyz_dict = {row["Table1"]: row["Xyz"] for row in df2.as_data_frame().itertuples()}
+
+# Create empty columns for Count and Xyz
+df["Count"] = None
+df["Xyz"] = None
+
+# Optimized for-loop for mapping based on precomputed dictionaries
+for i in range(df.nrows):
+    id_val = df[i, "ID"]
+    table_val = df[i, "Table1"]
+    
+    # Assign the corresponding values from the dictionaries
+    if id_val in count_dict:
+        df[i, "Count"] = count_dict[id_val]
+    if table_val in xyz_dict:
+        df[i, "Xyz"] = xyz_dict[table_val]
 
 # Show the result
-print("After mapping Count from df1:")
 df.show()
 
 
