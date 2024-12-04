@@ -1,3 +1,40 @@
+import h2o
+
+# Initialize H2O
+h2o.init()
+
+# Master dataframe (df)
+df = h2o.H2OFrame({
+    "ID": [101, 102, 103, 101, 102],
+    "Table1": ["A", "B", "C", "A", "B"],
+    "Table2": ["X", "Y", "Z", "X", "Y"],
+    "Table3": [5, 10, 15, 20, 25]
+})
+
+# df1 with ID and Count
+df1 = h2o.H2OFrame({
+    "ID": [101, 102],
+    "Count": [20, 30]
+})
+
+# Create a dictionary of mapping from df1
+count_dict = dict(zip(df1["ID"].as_data_frame()["ID"], df1["Count"].as_data_frame()["Count"]))
+
+# Add the "Count" column to df based on matching IDs
+df["Count"] = df["ID"].apply(lambda x: count_dict.get(x, None))
+
+# Show the result
+print("After mapping Count from df1:")
+df.show()
+
+
+
+
+
+
+
+
+
 
 import h2o
 
