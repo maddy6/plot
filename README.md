@@ -1,3 +1,35 @@
+# Convert df1 to pandas for easier lookup
+df1_pandas = df1.as_data_frame()
+
+# Create a dictionary for ID-to-Count mapping
+id_to_count = dict(zip(df1_pandas["ID"], df1_pandas["Count"]))
+
+# Add the "Count" column to df
+df["Count"] = df["ID"].as_data_frame().apply(lambda x: id_to_count.get(x[0], None), axis=1)
+
+print("After mapping Count from df1:")
+print(df)
+
+
+
+# Convert df2 to pandas for easier lookup
+df2_pandas = df2.as_data_frame()
+
+# Create a dictionary for Table1-to-Xyz mapping
+table1_to_xyz = dict(zip(df2_pandas["Table1"], df2_pandas["Xyz"]))
+
+# Add the "Xyz" column to df
+df["Xyz"] = df["Table1"].as_data_frame().apply(lambda x: table1_to_xyz.get(x[0], None), axis=1)
+
+print("After mapping Xyz from df2:")
+print(df)
+
+
+
+
+
+
+
 # plot
 Data for Plots
 
