@@ -1,0 +1,19 @@
+# Sample df2 (lookup dataframe for Table1 -> Xyz)
+df2 = h2o.H2OFrame({
+    "Table1": ["A", "B"],
+    "Xyz": [100, 200]
+})
+
+# Function to map "Xyz" based on "Table1"
+def map_xyz(table_val):
+    # Look up the value in df2 where "Table1" matches
+    matching_row = df2[df2["Table1"] == table_val, "Xyz"]
+    # If a match exists, return the "Xyz" value, otherwise return None
+    return matching_row[0, 0] if matching_row.nrows > 0 else None
+
+# Use H2O's apply to map the "Xyz" column from df2 to df based on "Table1"
+df["Xyz"] = df["Table1"].apply(map_xyz)
+
+# Show the result
+print("After mapping Xyz from df2:")
+df.show()
