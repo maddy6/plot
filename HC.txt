@@ -1,0 +1,93 @@
+-- Step 1: Calculate the global mean of the target column
+CREATE TEMPORARY TABLE global_mean AS
+SELECT AVG(fraud_ind) AS global_mean
+FROM input_table;
+
+-- Step 2: Perform Bayesian Target Encoding for each categorical variable
+-- Replace `COLUMN_NAME` with the actual categorical column names
+
+-- Example for `hct_mer_mcc`
+CREATE TEMPORARY TABLE hct_mer_mcc_bayesian_encoded AS
+SELECT 
+    t1.hct_mer_mcc,
+    (t3.mean_value + ((t2.global_mean - t3.mean_value) * 
+        (1 / (1 + EXP(-(t3.count_value - 10) / 5))))) AS hct_mer_mcc_bayesian_encoded
+FROM input_table t1
+CROSS JOIN global_mean t2
+LEFT JOIN (
+    SELECT 
+        hct_mer_mcc,
+        AVG(fraud_ind) AS mean_value,
+        COUNT(*) AS count_value
+    FROM input_table
+    GROUP BY hct_mer_mcc
+) t3
+ON t1.hct_mer_mcc = t3.hct_mer_mcc;
+
+-- Example for `hct_term_country_code`
+CREATE TEMPORARY TABLE hct_term_country_code_bayesian_encoded AS
+SELECT 
+    t1.hct_term_country_code,
+    (t3.mean_value + ((t2.global_mean - t3.mean_value) * 
+        (1 / (1 + EXP(-(t3.count_value - 10) / 5))))) AS hct_term_country_code_bayesian_encoded
+FROM input_table t1
+CROSS JOIN global_mean t2
+LEFT JOIN (
+    SELECT 
+        hct_term_country_code,
+        AVG(fraud_ind) AS mean_value,
+        COUNT(*) AS count_value
+    FROM input_table
+    GROUP BY hct_term_country_code
+) t3
+ON t1.hct_term_country_code = t3.hct_term_country_code;
+
+-- Example for `hct_term_state`
+CREATE TEMPORARY TABLE hct_term_state_bayesian_encoded AS
+SELECT 
+    t1.hct_term_state,
+    (t3.mean_value + ((t2.global_mean - t3.mean_value) * 
+        (1 / (1 + EXP(-(t3.count_value - 10) / 5))))) AS hct_term_state_bayesian_encoded
+FROM input_table t1
+CROSS JOIN global_mean t2
+LEFT JOIN (
+    SELECT 
+        hct_term_state,
+        AVG(fraud_ind) AS mean_value,
+        COUNT(*) AS count_value
+    FROM input_table
+    GROUP BY hct_term_state
+) t3
+ON t1.hct_term_state = t3.hct_term_state;
+
+-- Example for `ucm_avs_resp`
+CREATE TEMPORARY TABLE ucm_avs_resp_bayesian_encoded AS
+SELECT 
+    t1.ucm_avs_resp,
+    (t3.mean_value + ((t2.global_mean - t3.mean_value) * 
+        (1 / (1 + EXP(-(t3.count_value - 10) / 5))))) AS ucm_avs_resp_bayesian_encoded
+FROM input_table t1
+CROSS JOIN global_mean t2
+LEFT JOIN (
+    SELECT 
+        ucm_avs_resp,
+        AVG(fraud_ind) AS mean_value,
+        COUNT(*) AS count_value
+    FROM input_table
+    GROUP BY ucm_avs_resp
+) t3
+ON t1.ucm_avs_resp = t3.ucm_avs_resp;
+
+-- Step 3: Combine all Bayesian-encoded features into the final dataset
+CREATE TABLE final_bayesian_encoded_dataset AS
+SELECT 
+    t1.*,
+    t2.hct_mer_mcc_bayesian_encoded,
+    t3.hct_term_country_code_bayesian_encoded,
+    t4.hct_term_state_bayesian_encoded,
+    t5.ucm_avs_resp_bayesian_encoded
+FROM input_table t1
+LEFT JOIN hct_mer_mcc_bayesian_encoded t2 ON t1.hct_mer_mcc = t2.hct_mer_mcc
+LEFT JOIN hct_term_country_code_bayesian_encoded t3 ON t1.hct_term_country_code = t3.hct_term_country_code
+LEFT JOIN hct_term_state_bayesian_encoded t4 ON t1.hct_term_state = t4.hct_term_state
+LEFT JOIN ucm_avs_resp_bayesian_encoded t5 ON t1.ucm_avs_resp = t5.ucm_avs_resp;
