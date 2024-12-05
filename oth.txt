@@ -74,3 +74,19 @@ df['sum'] = sum_values
 # Add 'sum2' column from df2 to df
 sum2_values = df['id1'].cbind(
     df2[df['id1'] == df2['id1'], 'sum2'].ifelse(h2o.H2Frameh2.H2Frame
+
+
+
+------------------------------
+-----------------------------
+---------------------------
+
+# Example H2OFrames (replace with your actual data)
+df = h2o.H2OFrame({'id': [1, 2, 3], 'id1': ['a', 'b', 'c'], 'count': [10, 20, 30]})
+df1 = h2o.H2OFrame({'id': [1, 2], 'sum': [100, 200]})
+df2 = h2o.H2OFrame({'id1': ['a', 'b'], 'sum2': [300, 400]})
+
+# Add 'sum' from df1 to df
+sum_col = df['id'].apply(lambda x: df1[df1['id'] == x, 'sum'].flatten() if x in df1.keys()])
+
+
