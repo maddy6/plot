@@ -1,0 +1,76 @@
+
+```python
+import h2o
+
+# Initialize H2O
+h2o.init()
+
+# Example H2OFrames (replace with your actual data)
+# df = h2o.H2OFrame({'id': [1, 2, 3], 'id1': ['a', 'b', 'c'], 'count': [10, 20, 30]})
+# df1 = h2o.H2OFrame({'id': [1, 2], 'sum': [100, 200]})
+# df2 = h2o.H2OFrame({'id1': ['a', 'b'], 'sum2': [300, 400]})
+
+# Initialize 'sum' column in df with default values (e.g., None)
+df['sum'] = h2o.H2OFrame([None] * df.nrow)
+
+# Populate 'sum' column by matching 'id' between df and df1
+for i in range(df.nrow):
+    match = df1[df1['id'] == df[i, 'id']]
+    if match.nrow > 0:
+        df[i, 'sum'] = match[0, 'sum']
+
+# Initialize 'sum2' column in df with default values (e.g., None)
+df['sum2'] = h2o.H2OFrame([None] * df.nrow)
+
+# Populate 'sum2' column by matching 'id1' between df and df2
+for i in range(df.nrow):
+    match = df2[df2['id1'] == df[i, 'id1']]
+    if match.nrow > 0:
+        df[i, 'sum2'] = match[0, 'sum2']
+
+# View the final dataframe
+print(df)
+```
+
+### Explanation:
+1. **Column Initialization**:
+   - Initialize the `sum` and `sum2` columns in `df` with `None` values.
+2. **Row-wise Matching**:
+   - Iterate through each row of `df`.
+   - Find the matching rows in `df1` and `df2` where `id` and `id1` match.
+   - Assign the matching values to `sum` and `sum2` columns.
+3. **Entirely H2O-Based**:
+   - All operations are performed using H2OFrame methods like indexing (`df[i, 'column']`) and conditional filtering (`df1[df1['id'] == df[i, 'id']]`).
+
+This approach avoids the use of external libraries like Pandas and stays entirely within the H2O ecosystem.
+
+
+
+
+
+----------------------------------
+
+----------------------------------
+
+---------------------------------
+
+```python
+import h2o
+
+# Initialize H2O
+h2o.init()
+
+# Example H2OFrames (replace with your actual data)
+# df = h2o.H2OFrame({'id': [1, 2, 3], 'id1': ['a', 'b', 'c'], 'count': [10, 20, 30]})
+# df1 = h2o.H2OFrame({'id': [1, 2], 'sum': [100, 200]})
+# df2 = h2o.H2OFrame({'id1': ['a', 'b'], 'sum2': [300, 400]})
+
+# Add 'sum' column from df1 to df
+sum_values = df['id'].cbind(
+    df1[df['id'] == df1['id'], 'sum'].ifelse(h2o.H2OFrame([None] * df.nrow), df1['sum'])
+)
+df['sum'] = sum_values
+
+# Add 'sum2' column from df2 to df
+sum2_values = df['id1'].cbind(
+    df2[df['id1'] == df2['id1'], 'sum2'].ifelse(h2o.H2Frameh2.H2Frame
