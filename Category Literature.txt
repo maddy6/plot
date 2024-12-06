@@ -1,0 +1,82 @@
+Methodology Document: Bayesian Target Encoding with Interactions
+1. Objective
+To create robust and interpretable features for fraud detection models using Bayesian Target Encoding, incorporating interactions between categorical variables. This methodology addresses challenges related to high cardinality, overfitting, and meaningful representation of categorical data in machine-learning models.
+
+2. Problem Context
+Fraud detection models rely heavily on categorical data, often representing transaction details, user behavior, or device metadata. Challenges include:
+
+High Cardinality: Many categorical variables, such as merchant_id or terminal_id, have thousands or millions of unique values.
+Sparsity: Categories with few samples may introduce noise, leading to overfitting.
+Ignored Interactions: Relationships between categorical variables (e.g., between merchant_category_code and terminal_country) are often not explicitly captured, losing critical fraud signals.
+Bayesian Target Encoding mitigates these challenges while enhancing interpretability and capturing interactions that improve predictive accuracy.
+
+3. Literature Review
+3.1. Bayesian Target Encoding
+Smoothing for Risk Estimation: The concept of smoothing to manage noise and small sample sizes is rooted in Bayesian statistics. The method balances empirical means with a prior distribution, effectively preventing overfitting for small categories (Gelman et al., 2013).
+Applications in ML: Bayesian smoothing techniques for encoding categorical features are well-documented in the literature on fraud detection (Dal Pozzolo et al., 2017) and general supervised learning tasks involving high-cardinality categorical variables (Micci-Barreca, 2001).
+3.2. Encoding Categorical Features for ML
+Impact of Encoding on Predictive Models: Studies emphasize that the representation of categorical features can significantly influence model performance. Techniques like target encoding are favored in domains like financial risk modeling and insurance due to their ability to directly relate categories to outcome probabilities (Zhou et al., 2019).
+Business Justification: In risk modeling, encoding methodologies that provide interpretable and statistically sound features are essential to align machine learning outputs with business insights (Rudin, 2019).
+3.3. Interaction Terms
+Importance of Feature Interactions: Literature highlights the significance of interactions in tabular data. For example, interactions between product categories and customer regions can uncover trends undetectable by individual features (Cheng et al., 2016).
+Risk Features in Fraud Detection: Fraud detection research often identifies that interactions between features (e.g., device_id and IP_country) reveal synergistic effects that improve model performance (Carcillo et al., 2018).
+4. Methodology
+4.1. Bayesian Target Encoding
+Bayesian Target Encoding calculates an encoded value for each category using:
+
+Encoded Value = 𝜇global +(𝜇category−𝜇global)*Shrinkage Factor
+
+Where:𝜇global : Global mean of the target variable.
+𝜇category : Mean of the target variable within the category.
+
+Shrinkage Factor: A weight balancing the global mean and category-specific mean:
+Shrinkage Factor=1/1+exp⁡(−(𝑛−min_samples_leaf/smoothing))
+
+ 
+This approach reduces overfitting for sparse categories while capturing meaningful trends for risk assessment.
+
+4.2. Interaction Terms
+Interaction terms combine multiple categorical features to capture synergistic effects. For example:
+
+An interaction between merchant_category_code and terminal_country may reflect specific high-risk merchant types in certain regions.
+Encoding interactions ensures that the joint distribution of features contributes to the model, particularly relevant in fraud detection where co-occurrence patterns are critical.
+5. Implementation
+5.1. Algorithm Steps
+Compute the global mean of the target variable.
+For each categorical feature:
+Calculate the mean and count of the target variable for each category.
+Apply the Bayesian formula for encoding.
+Generate interaction terms by concatenating categorical columns up to max_interactions levels.
+Apply Bayesian encoding to these interaction terms.
+5.2. Python Code Implementation
+The provided code implements these steps efficiently and is scalable for high-dimensional datasets. It balances statistical rigor with computational efficiency.
+
+6. Business and Statistical Justification
+6.1. Business Relevance
+Risk Assessment: Encoded features represent the fraud likelihood, making them intuitive for business users.
+Interpretability: Bayesian encodings produce scores that align with intuitive risk levels.
+Scalability: Applicable across multiple categorical features and interactions.
+6.2. Statistical Rigor
+Noise Reduction: Shrinkage avoids overfitting, especially in sparse categories.
+Capturing Latent Patterns: Interaction terms allow the model to detect fraud signals hidden in feature combinations.
+Validation: The encoded features can be validated statistically through correlation analysis, feature importance, and predictive power.
+7. Validation
+7.1. Statistical Validation
+Correlation Analysis: Measure correlation between encoded features and the target variable to confirm relevance.
+Cross-Validation: Evaluate predictive power using k-fold cross-validation on a fraud detection model.
+Feature Importance: Assess feature contributions in the model to ensure encoded features add value.
+7.2. Business Validation
+Risk Profiling: Review encoded values for known fraud-prone categories.
+Explainability Reports: Provide category-wise statistics (e.g., count, mean target) for encoded values.
+8. Literature References
+Micci-Barreca, D. (2001). "A Preprocessing Scheme for High-Cardinality Categorical Attributes in Classification and Prediction Problems." SIGKDD Explorations.
+Gelman, A., et al. (2013). Bayesian Data Analysis. CRC Press.
+Dal Pozzolo, A., et al. (2017). "Credit Card Fraud Detection Using Machine Learning: A Survey." IEEE Computational Intelligence Magazine.
+Zhou, Z., et al. (2019). "Optimal Feature Representation for Categorical Data in Tabular Machine Learning." Journal of Machine Learning Research.
+Carcillo, F., et al. (2018). "Combining Unsupervised and Supervised Learning in Credit Card Fraud Detection." Information Sciences.
+Cheng, H., et al. (2016). "Wide & Deep Learning for Recommender Systems." arXiv preprint.
+Rudin, C. (2019). "Stop Explaining Black Box Machine Learning Models for High Stakes Decisions and Use Interpretable Models Instead." Nature Machine Intelligence.
+9. Limitations and Mitigations
+Over-smoothing: Carefully tune the smoothing parameter to preserve meaningful patterns.
+Scalability: Interaction terms may lead to high dimensionality. Limit max_interactions to manageable levels.
+Assumptions: Encoding assumes a linear relationship between the encoded value and the target, which might not hold in all cases.	
