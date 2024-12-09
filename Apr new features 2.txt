@@ -1,3 +1,106 @@
+Here's the Python code to generate dummy data for all datasets and the relevant columns used in creating the 20 features. The final step combines all datasets with the features calculated.
+
+import pandas as pd
+import numpy as np
+
+# Set random seed for reproducibility
+np.random.seed(42)
+
+# Generate Profitability Dataset
+profitability = pd.DataFrame({
+    'ccid': np.arange(1, 5001),
+    'pure_purch_trans_bal_amt': np.random.randint(1000, 10000, 5000),
+    'bk3_score_val': np.random.randint(600, 800, 5000),
+    'util_ncc_brt_cl': np.random.randint(5000, 15000, 5000),
+    'tot_pts_amount': np.random.randint(100, 1000, 5000),
+    'interest': np.random.uniform(0.1, 0.3, 5000),
+    'amort_balcon_fee_amt': np.random.randint(100, 500, 5000)
+})
+
+# Generate Transaction Dataset
+transaction = pd.DataFrame({
+    'ccid': np.arange(1, 5001),
+    'temp_key': np.random.randint(100000, 999999, 5000),
+    'trans_amt': np.random.randint(500, 2000, 5000),
+    'stlmt_rt': np.random.uniform(0.8, 1.2, 5000),
+    'foreign_amt': np.random.randint(100, 1000, 5000),
+    'frgn_cnvrtn_rt': np.random.uniform(0.8, 1.5, 5000),
+    'sys_post_pee_num': np.random.randint(1, 10, 5000),
+    'fee_int_adj_cd': np.random.randint(1, 5, 5000),
+    'zip_cd': np.random.randint(10000, 99999, 5000),
+    'pos_entry_mode': np.random.choice([1, 2, 3], 5000),
+    'refunds_fin_sub_cd': np.random.randint(0, 50, 5000)
+})
+
+# Generate Billing Dataset
+billing = pd.DataFrame({
+    'ccid': np.arange(1, 5001),
+    'bankt_score_val': np.random.randint(600, 800, 5000),
+    'bgo_score_val': np.random.randint(600, 800, 5000),
+    'bill_actv_ind': np.random.choice([0, 1], 5000),
+    'ca_apr': np.random.uniform(0.1, 0.3, 5000),
+    'fix_pay_apr': np.random.uniform(0.1, 0.25, 5000),
+    'dynmc_credit_limit': np.random.randint(5000, 20000, 5000),
+    'dynmc_ca_limit': np.random.randint(1000, 15000, 5000),
+    'high_bill_bal_amt': np.random.randint(1000, 8000, 5000),
+    'ytd_fees_amt': np.random.randint(100, 1000, 5000),
+    'totl_sales_amt': np.random.randint(1000, 5000, 5000),
+    'totl_pay_amt': np.random.randint(100, 3000, 5000),
+    'min_pymt_payoff_tot_amt': np.random.randint(50, 500, 5000),
+    'high_pay_amt': np.random.randint(500, 2000, 5000)
+})
+
+# Merging the Datasets
+merged_df = profitability.merge(transaction, on='ccid', how='inner')
+merged_df = merged_df.merge(billing, on='ccid', how='inner')
+
+# Display the merged dataset
+print(merged_df.head())
+
+# Export final merged dataset to CSV
+merged_df.to_csv("merged_dataset_with_features.csv", index=False)
+
+Explanation:
+
+1. Profitability Dataset:
+
+Key columns: pure_purch_trans_bal_amt, bk3_score_val, interest, etc.
+
+
+
+2. Transaction Dataset:
+
+Key columns: trans_amt, foreign_amt, frgn_cnvrtn_rt, fee_int_adj_cd, etc.
+
+
+
+3. Billing Dataset:
+
+Key columns: dynmc_credit_limit, fix_pay_apr, totl_sales_amt, etc.
+
+
+
+4. Merging:
+
+Combines datasets using ccid to form a single comprehensive dataset for feature engineering.
+
+
+
+
+Now you can run this code to generate dummy data, merge it, and start feature calculations on it.
+
+
+
+
+
+
+
+
+
+
+
+
+
 Here is the complete Python code to implement all 20 features from the merged dataset (profitability, transaction, billing):
 
 import numpy as np
