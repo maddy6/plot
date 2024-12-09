@@ -1,3 +1,165 @@
+Here is the complete Python code to generate the 10 FP-growth-based features using your transaction dataset. The code includes data preprocessing, applying FP-growth to find frequent itemsets, and creating the features based on those itemsets.
+
+Python Code for FP-growth-based Features:
+
+import pandas as pd
+from mlxtend.frequent_patterns import apriori, association_rules
+from mlxtend.preprocessing import TransactionEncoder
+
+# Sample dataframe (replace with your actual dataframe)
+# For illustration purposes, assuming 'df' is your dataset
+
+# Function to prepare transaction data for FP-growth
+def prepare_transactions(df):
+    transactions = []
+    
+    # For each transaction, collect relevant features as a list of items
+    for _, row in df.iterrows():
+        transaction = []
+        
+        # Include relevant features in the transaction list (adjust based on your features)
+        transaction.append(str(row['merch_num']))
+        transaction.append(str(row['foreign_currency_cd']))
+        transaction.append(str(row['trans_cd']))
+        transaction.append(str(row['auth_cd']))
+        transaction.append(str(row['pos_entry_mode']))
+        transaction.append(str(row['sale_dt'].month))  # For example, using the month of the transaction date
+        
+        transactions.append(transaction)
+    
+    return transactions
+
+# Prepare transaction data
+transactions = prepare_transactions(df)
+
+# Convert the list of transactions into a format suitable for FP-growth
+te = TransactionEncoder()
+te_ary = te.fit(transactions).transform(transactions)
+df_transformed = pd.DataFrame(te_ary, columns=te.columns_)
+
+# Apply the FP-growth algorithm to find frequent itemsets
+frequent_itemsets = apriori(df_transformed, min_support=0.05, use_colnames=True)
+
+# Generate association rules from the frequent itemsets
+rules = association_rules(frequent_itemsets, metric="lift", min_threshold=1.0)
+
+# Display the top rules (optional)
+print(rules.head())
+
+# Function to check if an itemset exists in the frequent itemsets
+def check_itemset_in_frequent(item, frequent_itemsets):
+    return item in frequent_itemsets['itemsets'].values
+
+# 10 FP-growth-based features:
+
+# 1. Frequent Merchant Indicator (FMI)
+df['FMI'] = df['merch_num'].apply(lambda x: 1 if check_itemset_in_frequent(str(x), frequent_itemsets) else 0)
+
+# 2. Frequent Transaction Type (FTT)
+df['FTT'] = df['trans_cd'].apply(lambda x: 1 if check_itemset_in_frequent(str(x), frequent_itemsets) else 0)
+
+# 3. Foreign Currency Transaction Association (FCTA)
+df['FCTA'] = df['foreign_currency_cd'].apply(lambda x: 1 if check_itemset_in_frequent(str(x), frequent_itemsets) else 0)
+
+# 4. Transaction Size Association (TSA)
+# Here we define a threshold based on frequent itemsets. You can replace it with actual logic or itemsets related to transaction size.
+threshold = 1000  # Example threshold
+df['TSA'] = df['trans_amt'].apply(lambda x: 1 if x > threshold else 0)
+
+# 5. Merchant and Foreign Transaction Association (MFTA)
+df['MFTA'] = df.apply(lambda row: 1 if (check_itemset_in_frequent(str(row['merch_num']), frequent_itemsets) and 
+                                       check_itemset_in_frequent(str(row['foreign_currency_cd']), frequent_itemsets)) else 0, axis=1)
+
+# 6. High Fee Transaction Indicator (HFTI)
+# Replace with your own logic or threshold based on the frequent itemsets
+df['HFTI'] = df['foreign_fee_chgd_amt'].apply(lambda x: 1 if x > threshold else 0)
+
+# 7. Date-Time and Merchant Activity Association (DTMA)
+df['DTMA'] = df.apply(lambda row: 1 if (check_itemset_in_frequent(str(row['merch_num']), frequent_itemsets) and 
+                                       check_itemset_in_frequent(str(row['sale_dt'].month), frequent_itemsets)) else 0, axis=1)
+
+# 8. Foreign Amount Association (FAA)
+df['FAA'] = df['foreign_amt'].apply(lambda x: 1 if x > threshold else 0)
+
+# 9. Unusual Transaction Type Frequency (UTTF)
+df['UTTF'] = df['trans_cd'].apply(lambda x: 1 if not check_itemset_in_frequent(str(x), frequent_itemsets) else 0)
+
+# 10. Cross-Merchant Transaction Pattern (CMTP)
+df['CMTP'] = df.apply(lambda row: 1 if (check_itemset_in_frequent(str(row['merch_num']), frequent_itemsets) and 
+                                       row['foreign_amt'] > threshold) else 0, axis=1)
+
+# Display the new features
+print(df[['FMI', 'FTT', 'FCTA', 'TSA', 'MFTA', 'HFTI', 'DTMA', 'FAA', 'UTTF', 'CMTP']].head())
+
+Explanation of the Code:
+
+1. Prepare Transaction Data for FP-growth:
+
+The prepare_transactions function converts your transaction data into a list format that is suitable for FP-growth. You can customize the columns included in the transaction list as per your requirement.
+
+
+
+2. Transaction Transformation:
+
+We use TransactionEncoder from the mlxtend library to convert the list of transactions into a binary matrix where each column corresponds to an item (e.g., merchant, foreign currency, transaction type, etc.).
+
+
+
+3. FP-growth:
+
+The apriori algorithm is applied to find frequent itemsets in the transformed transaction data. We use a minimum support threshold of 0.05, which you can adjust based on the dataset.
+
+
+
+4. Association Rules:
+
+The association_rules function is used to generate association rules based on the frequent itemsets, with a minimum lift threshold of 1.0.
+
+
+
+5. Creating the 10 FP-growth-based Features:
+
+The features are created using apply and checking if certain patterns (itemsets) exist in the frequent itemsets. These features represent associations between different transaction characteristics such as merchant ID, transaction type, foreign currency, etc.
+
+
+
+6. Display:
+
+The last line displays the new FP-growth-based features for inspection.
+
+
+
+
+Notes:
+
+You need to install mlxtend using pip install mlxtend to use the FP-growth and apriori algorithms.
+
+The threshold values (e.g., for transaction amount, fee amount, etc.) should be adjusted based on your dataset’s distribution or based on the patterns observed in the frequent itemsets.
+
+
+This code will help you generate complex features based on frequent itemsets using FP-growth, which can be useful for detecting RegZ anomalies related to fee structures, foreign transactions, merchants, and transaction types.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 Sure! If you would like to perform Fee and Charge Analysis based on different features from the transaction dataset instead of foreign_fee_flag_ind, here are a few other features you can consider:
 
 1. trans_amt: Transaction amount, which will allow you to calculate how much of the fee is in proportion to the total transaction.
