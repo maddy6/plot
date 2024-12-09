@@ -1,3 +1,217 @@
+For an anomaly detection problem with Reg Z (APR adjustments), advanced and high-level features can demonstrate deep thought and insight into the problem. These features should uncover hidden patterns in the data that aren't immediately apparent but are highly significant for identifying compliance issues. Here's a list of advanced features specifically for the APR (Annual Percentage Rate) use case, using your dataset variables, with explanations and their connection to anomaly detection.
+
+
+---
+
+Advanced Features for APR Use Case
+
+1. Interest Rate Spread Deviation (IRSD)
+
+Formula:
+
+
+\text{IRSD} = \left| \frac{\text{interest} - (\text{pure\_purch\_trans\_bal\_amt} \cdot \text{cof})}{\text{pure\_purch\_trans\_bal\_amt}} - \text{apr\_index\_id} \right|
+
+This feature measures the deviation between the actual interest rate charged and the benchmark APR rate (apr_index_id) for "pure purchase" balances. A large spread could indicate an anomaly, such as failure to adjust APR for eligible accounts or data mismatches.
+
+Hidden Insight:
+It reveals systemic errors in APR application where nominal APR differs from calculated APR over time.
+
+
+
+---
+
+2. Time-Weighted Credit Utilization Anomaly Score (TWCAS)
+
+Formula:
+
+
+\text{TWCAS} = \sum_{t=1}^{T} \left( \text{util\_ncc\_brt\_cl}_t \cdot \frac{t}{T} \right) / \text{total\_credi\_limit}
+
+Time-weighted utilization focuses on whether a customer’s credit usage has shown a sustained upward trend (e.g., eligible for APR reductions). The weight gives more importance to recent periods.
+
+Hidden Insight:
+Captures gradual changes in behavior that might go unnoticed in snapshot-based features.
+
+
+
+---
+
+3. Rolling Fee-to-Balance Ratio Deviation (RFBRD)
+
+Formula:
+
+
+\text{RFBRD} = \frac{\text{mean}( \text{late\_fees}_{t-k:t} + \text{ca\_fee\_amt}_{t-k:t})}{\text{mean}( \text{pure\_purch\_trans\_bal\_amt}_{t-k:t})}
+
+This feature tracks rolling changes in the ratio of fees to balances over a sliding window of k months. It highlights irregularities like unexpected fee spikes or drops relative to balances.
+
+Hidden Insight:
+Detects subtle, sustained fee misalignments caused by system errors or policy mismanagement.
+
+
+
+---
+
+4. Customer Clustering Drift Index (CCDI)
+
+Method:
+
+Perform customer clustering using historical data on bk3_score_val, util_ncc_brt_cl, total_credi_limit, and pure_purch_trans_bal_amt.
+
+Assign clusters to customers and track their cluster membership drift over time.
+
+CCDI measures the proportion of customers whose cluster membership has shifted unexpectedly.
+
+
+Why It Matters:
+Changes in cluster membership can reveal systemic issues like misclassification of customers eligible for APR adjustments.
+
+Hidden Insight:
+Tracks shifts in behavioral patterns at a population level, revealing hidden systemic trends.
+
+
+
+---
+
+5. Behavioral Anomaly Index (BAI)
+
+Formula:
+
+
+\text{BAI} = \frac{\Delta \text{bk3\_score\_val}}{\text{prior\_purch\_amt}} \cdot \text{earn\_pts}
+
+This feature combines the change in bankruptcy score (bk3_score_val) with purchasing trends and rewards points. A mismatch (e.g., high bankruptcy score but steady purchases) may signal a failure to adjust APR appropriately.
+
+Hidden Insight:
+Captures unexpected behavior patterns, highlighting potential mismanagement of risk and APR policies.
+
+
+
+---
+
+6. Hidden Fee Anomaly Ratio (HFAR)
+
+Formula:
+
+
+\text{HFAR} = \frac{\text{total\_all\_fee\_amt} - (\text{late\_fees} + \text{ca\_fee\_amt} + \text{annual\_purchase\_fee\_amt})}{\text{purch\_amt}}
+
+Identifies discrepancies between total fees charged and the sum of known fee components. Anomalies here could indicate hidden charges or misaligned fee policies.
+
+Hidden Insight:
+Surface-level fees may appear compliant, but this feature can expose hidden non-compliance.
+
+
+
+---
+
+7. Utilization Spike Index (USI)
+
+Formula:
+
+
+\text{USI} = \frac{\text{util\_ncc\_brt\_cl}_{t} - \text{util\_ncc\_brt\_cl}_{t-1}}{\text{util\_ncc\_brt\_cl}_{t-1}}
+
+This feature detects sudden spikes in credit utilization that might warrant APR adjustments but were ignored.
+
+Hidden Insight:
+Flags rapid credit usage increases often associated with financial distress.
+
+
+
+---
+
+8. Fee Elasticity Index (FEI)
+
+Formula:
+
+
+\text{FEI} = \frac{\Delta \text{total\_all\_fee\_amt}}{\Delta \text{purch\_amt}}
+
+Measures how sensitive total fees are to changes in purchase amounts. Anomalies here suggest disproportionate fee structures.
+
+Hidden Insight:
+Uncovers potential mismanagement of fee calculations relative to spending patterns.
+
+
+
+---
+
+9. APR Reduction Eligibility Gap (AREG)
+
+Formula:
+
+
+\text{AREG} = \text{util\_ncc\_brt\_cl} \cdot (1 - \frac{\text{bk3\_score\_val}}{\max(\text{bk3\_score\_val})})
+
+Combines credit utilization with bankruptcy score to measure eligibility for APR reductions. Large gaps highlight missed opportunities for adjustments.
+
+Hidden Insight:
+Systemic failures to address high-risk accounts emerge through this metric.
+
+
+
+---
+
+10. Complaint-Driven Risk Adjustment Index (CDRAI)
+
+Formula:
+
+
+\text{CDRAI} = \frac{\text{count of complaints related to APR adjustments}}{\text{util\_ncc\_brt\_cl}}
+
+Links complaints to credit utilization levels, surfacing systemic issues in APR-related policies.
+
+Hidden Insight:
+A high CDRAI signals concentrated problems in specific customer segments.
+
+
+
+---
+
+Why These Features Impress Judges
+
+1. Complexity & Depth: Features like IRSD and TWCAS demonstrate deep knowledge of APR dynamics and customer behavior.
+
+
+2. Hidden Patterns: Metrics like HFAR and CDRAI go beyond surface-level anomalies to uncover systemic issues.
+
+
+3. Reg Z Alignment: All features directly address compliance challenges, linking anomalies to policy violations.
+
+
+4. Innovation: Combining behavioral, fee, and credit utilization metrics showcases advanced thinking.
+
+
+
+
+---
+
+Would you like Python implementations for these features with EDA and visualizations?
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # Sample df2 (lookup dataframe for Table1 -> Xyz)
 df2 = h2o.H2OFrame({
     "Table1": ["A", "B"],
