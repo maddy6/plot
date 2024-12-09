@@ -1,0 +1,156 @@
+1. Text Preprocessing Using spaCy
+First, let's update the preprocessing using spaCy for tasks like tokenization, removing stopwords, and punctuation.
+
+Code: Text Preprocessing with spaCy
+python
+Copy code
+import spacy
+import re
+import pandas as pd
+from sklearn.feature_extraction.text import CountVectorizer
+
+# Load spaCy's English language model
+nlp = spacy.load("en_core_web_sm")
+
+# Example of a complaint column 'complaint_text' with long strings
+def preprocess_text(text):
+    # Clean text: convert to lowercase, remove special characters, numbers, and punctuation
+    text = re.sub(r'[^a-z\s]', '', text.lower())
+    
+    # Tokenize and remove stopwords using spaCy
+    doc = nlp(text)
+    tokens = [token.text for token in doc if not token.is_stop and not token.is_punct]
+    
+    # Join tokens back to a single string
+    cleaned_text = ' '.join(tokens)
+    return cleaned_text
+
+# Example dataset (replace with your actual data)
+dummy_data = pd.DataFrame({
+    'complaint_text': ['This is a complaint about robocalls.', 'I am tired of receiving unsolicited marketing calls.', 'Too many telemarketer calls!']
+})
+
+# Apply preprocessing to the complaint column
+dummy_data['processed_complaint'] = dummy_data['complaint_text'].apply(preprocess_text)
+print(dummy_data[['complaint_text', 'processed_complaint']])
+2. TF-IDF Vectorization
+You can use CountVectorizer to convert the processed complaint data into a bag-of-words representation.
+
+Code: TF-IDF Vectorization
+python
+Copy code
+from sklearn.feature_extraction.text import TfidfVectorizer
+
+# Use TF-IDF to represent text data
+vectorizer = TfidfVectorizer(max_features=20)  # You can adjust the number of features
+X = vectorizer.fit_transform(dummy_data['processed_complaint'])
+
+# Convert to a DataFrame for easier analysis
+complaint_features = pd.DataFrame(X.toarray(), columns=vectorizer.get_feature_names_out())
+print(complaint_features.head())
+3. Sentiment Analysis Using TextBlob
+TextBlob is a simple library for text processing and sentiment analysis. You can use it to classify complaints as positive, negative, or neutral.
+
+Code: Sentiment Analysis with TextBlob
+python
+Copy code
+from textblob import TextBlob
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Function to analyze sentiment using TextBlob
+def get_sentiment(text):
+    blob = TextBlob(text)
+    return blob.sentiment.polarity  # Returns a polarity score (-1 to 1)
+
+# Apply sentiment analysis to the complaint data
+dummy_data['sentiment_score'] = dummy_data['complaint_text'].apply(get_sentiment)
+
+# Classify sentiment as positive, negative, or neutral based on the polarity score
+dummy_data['sentiment'] = dummy_data['sentiment_score'].apply(lambda x: 'positive' if x > 0 else ('negative' if x < 0 else 'neutral'))
+
+# Plot sentiment distribution
+plt.figure(figsize=(10, 6))
+sns.countplot(x='sentiment', data=dummy_data, palette='coolwarm')
+plt.title('Sentiment of Complaints')
+plt.xlabel('Sentiment')
+plt.ylabel('Number of Complaints')
+plt.show()
+
+print(dummy_data[['complaint_text', 'sentiment']])
+4. Topic Modeling Using LDA (Latent Dirichlet Allocation)
+You can use Latent Dirichlet Allocation (LDA) to identify the main topics in complaints.
+
+Code: Topic Modeling with LDA
+python
+Copy code
+from sklearn.decomposition import LatentDirichletAllocation
+
+# Define the number of topics (e.g., 5 different types of complaints)
+lda = LatentDirichletAllocation(n_components=5, random_state=42)
+lda_topics = lda.fit_transform(X)
+
+# Create a DataFrame for the topics
+lda_df = pd.DataFrame(lda_topics, columns=[f'Topic {i+1}' for i in range(5)])
+
+# Show the top words for each topic
+for index, topic in enumerate(lda.components_):
+    print(f"Topic {index+1}:")
+    print([vectorizer.get_feature_names_out()[i] for i in topic.argsort()[-10:]])
+5. Named Entity Recognition (NER) Using spaCy
+You can use spaCy's built-in Named Entity Recognition (NER) to extract entities like company names, dates, and locations from the complaint data.
+
+Code: Named Entity Recognition (NER) with spaCy
+python
+Copy code
+import spacy
+
+# Load the spaCy English model
+nlp = spacy.load("en_core_web_sm")
+
+# Function to extract named entities from complaint
+def extract_entities(text):
+    doc = nlp(text)
+    entities = [ent.text for ent in doc.ents]
+    return entities
+
+# Apply the function to the complaint data
+dummy_data['complaint_entities'] = dummy_data['complaint_text'].apply(extract_entities)
+
+# Show the extracted entities
+print(dummy_data[['complaint_text', 'complaint_entities']])
+6. Text Classification (Naive Bayes Classifier)
+You can classify the complaints into predefined categories such as harassment, robocalls, etc., using Naive Bayes.
+
+Code: Text Classification Using Naive Bayes
+python
+Copy code
+from sklearn.model_selection import train_test_split
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.metrics import classification_report
+
+# Example: Assigning labels based on complaint type (you can define your own categories)
+dummy_data['complaint_label'] = dummy_data['complaint_text'].apply(lambda x: 'harassment' if 'harass' in x else 'robocall')
+
+# Split the data into train and test sets
+X_train, X_test, y_train, y_test = train_test_split(X, dummy_data['complaint_label'], test_size=0.3, random_state=42)
+
+# Train the Naive Bayes model
+nb = MultinomialNB()
+nb.fit(X_train, y_train)
+
+# Make predictions and evaluate the model
+y_pred = nb.predict(X_test)
+print(classification_report(y_test, y_pred))
+Key Explanations for Each Step:
+Text Preprocessing with spaCy: We used spaCy for tokenization, stopword removal, and punctuation removal. It helps in cleaning and preparing the text for further analysis.
+
+TF-IDF Vectorization: TF-IDF is used to convert the text data into numerical representations while considering the significance of each word in the document. This is crucial for analyzing and clustering complaints.
+
+Sentiment Analysis with TextBlob: TextBlob provides an easy way to perform sentiment analysis on text. We classified the complaints based on sentiment, which helps in identifying negative sentiments tied to potential TCPA violations.
+
+Topic Modeling with LDA: LDA allows you to discover hidden topics in your complaint data, which can be helpful in understanding what types of complaints are most common and linked to potential TCPA issues.
+
+NER with spaCy: By extracting named entities, you can gain insights into important keywords in the complaints, such as company names, dates, and locations that may be associated with violations or customer pain-points.
+
+Text Classification with Naive Bayes: By classifying complaints into categories (e.g., robocalls, harassment), you can better understand which types of complaints are likely associated with TCPA violations.

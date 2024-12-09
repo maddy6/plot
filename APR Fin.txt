@@ -1,0 +1,122 @@
+Datasets Available for Feature Engineering:
+Transaction Dataset (e.g., transaction_amount, trans_type_id, ca_fee_amt):
+Contains data on the financial transactions, fee amounts, loan caps, etc.
+Customer Experience Dataset (e.g., delinq_stat, payment history):
+Gives insights into the customer’s interaction with the bank, including payment history and delinquency status.
+Billing Statement Dataset (e.g., fees, payment amounts, due balance):
+Contains information on how the customer is billed and their payment behavior, which could help flag anomalies in APR-related issues.
+Regulatory Classification Dataset (e.g., regulatory_classfication_1, regulatory_classfication_2):
+Provides insights into customer classifications based on regulations, which could help identify cases where APR rules are being misapplied.
+Expanded Feature Engineering with Multiple Datasets
+Here’s a re-evaluation of the features using a wider variety of datasets:
+
+1. Loan-to-Transaction Ratio (Transaction Dataset)
+Formula: loan_cap_amt / transaction_amount
+Reason: A high ratio can signal excessive APR charges relative to the transaction amount, which could be an anomaly indicating misuse.
+python
+Copy code
+df['loan_to_transaction_ratio'] = df['loan_cap_amt'] / df['transaction_amount']
+2. High Fee Ratio (Transaction Dataset)
+Formula: ca_fee_amt / transaction_amount
+Reason: If the fee amount is disproportionately high relative to the transaction amount, it could indicate excessive APR or misuse of APR rates.
+python
+Copy code
+df['high_fee_ratio'] = df['ca_fee_amt'] / df['transaction_amount']
+3. Credit Utilization Ratio (Transaction Dataset + Customer Experience Dataset)
+Formula: transaction_amount / total_credit_limit
+Reason: A high utilization rate may indicate risk for APR violations. A person using too much of their credit limit could be at risk of high APR charges.
+python
+Copy code
+df['credit_utilization_ratio'] = df['transaction_amount'] / df['total_credit_limit']
+4. Over-Credit Limit Fee Indicator (Transaction Dataset + Customer Experience Dataset)
+Formula: Flag if transaction_amount exceeds total_credit_limit.
+Reason: Transactions exceeding the credit limit could trigger additional fees, potentially violating APR guidelines under RegZ.
+python
+Copy code
+df['over_credit_limit_fee'] = (df['transaction_amount'] > df['total_credit_limit']).astype(int)
+5. Delinquency Status (Customer Experience Dataset)
+Formula: Use delnq_stat_cur_mon directly.
+Reason: Delinquent accounts often result in higher interest rates or penalties, signaling potential misuse or non-compliance with APR rules.
+python
+Copy code
+df['delinquent_account'] = df['delnq_stat_cur_mon']
+6. APR Misuse Flag (Transaction Dataset + Customer Experience Dataset)
+Formula: Flag if ca_fee_amt exceeds 10% of the transaction_amount.
+Reason: Excessive cash advance fees could point to the use of higher-than-allowed APR rates, a violation of RegZ.
+python
+Copy code
+df['apr_misuse_flag'] = (df['ca_fee_amt'] > (0.1 * df['transaction_amount'])).astype(int)
+7. Interest-to-Loan Cap Ratio (Transaction Dataset)
+Formula: net_interest_amt / loan_cap_amt
+Reason: A high interest-to-loan cap ratio may indicate the APR charged is too high relative to the loan cap, violating RegZ.
+python
+Copy code
+df['interest_to_loan_cap_ratio'] = df['net_interest_amt'] / df['loan_cap_amt']
+8. Fee-to-Credit Ratio (Transaction Dataset)
+Formula: ca_fee_amt / total_credit_limit
+Reason: If the fee is too high compared to the credit limit, it could indicate improper APR application.
+python
+Copy code
+df['fee_to_credit_ratio'] = df['ca_fee_amt'] / df['total_credit_limit']
+9. Regulatory Classification Interaction (Regulatory Classification Dataset)
+Formula: Interaction between regulatory classifications.
+Reason: Regulatory classifications may provide insight into customers who fall under specific APR restrictions. Anomalies in their behavior could signal APR violations.
+python
+Copy code
+df['regulatory_class_interaction'] = df['regulatory_classfication_1'].astype(str) + '_' + df['regulatory_classfication_2'].astype(str)
+10. Account Age (Customer Experience Dataset)
+Formula: Randomly generated age based on account creation date (or another heuristic).
+Reason: Older accounts could show different behavior, and anomalies in older accounts could signal RegZ violations (e.g., not reviewing APR over time).
+python
+Copy code
+df['account_age'] = np.random.randint(1, 10, size=n)  # Example of random age generation
+11. Frequency of High-Interest Transactions (Transaction Dataset + Billing Dataset)
+Formula: Count of transactions with interest amounts greater than $100.
+Reason: Repeated high-interest transactions might suggest the improper use of APR, which could be a violation.
+python
+Copy code
+df['high_interest_frequency'] = (df['net_interest_amt'] > 100).astype(int)
+12. Transaction Type Flag (Transaction Dataset)
+Formula: Flag for cash advance transactions (e.g., trans_type_id == 60).
+Reason: Cash advance transactions have stricter APR rules under RegZ. Anomalies or misuse could indicate violations.
+python
+Copy code
+df['cash_advance_flag'] = (df['trans_type_id'] == 60).astype(int)
+13. Loan Cap Adjustment Frequency (Transaction Dataset + Customer Experience Dataset)
+Formula: Check if loan_cap_amt changes frequently.
+Reason: Frequent adjustments in the loan cap could be indicative of attempting to bypass APR rules or regulatory restrictions.
+python
+Copy code
+df['loan_cap_adjustment_frequency'] = np.random.choice([0, 1], size=n)  # Simulating frequency
+14. Cash Advance-to-Total Transaction Ratio (Transaction Dataset)
+Formula: ca_fee_amt / (ca_fee_amt + transaction_amount)
+Reason: This ratio helps identify an over-reliance on cash advances, which could trigger excessive APR rates or misuse of APR rules.
+python
+Copy code
+df['cash_advance_ratio'] = df['ca_fee_amt'] / (df['ca_fee_amt'] + df['transaction_amount'])
+15. Total Fees-to-Transaction Amount Ratio (Transaction Dataset + Billing Statement Dataset)
+Formula: total_net_fees_amt / transaction_amount
+Reason: If the fees are disproportionately high compared to the transaction amount, it may indicate improper fee application, potentially violating RegZ.
+python
+Copy code
+df['fees_to_transaction_ratio'] = df['total_net_fees_amt'] / df['transaction_amount']
+Summary of Datasets Used for Features:
+Transaction Dataset:
+
+Features: Loan-to-Transaction Ratio, High Fee Ratio, Credit Utilization Ratio, Over-Credit Limit Fee Indicator, APR Misuse Flag, Fee-to-Credit Ratio, Cash Advance-to-Transaction Ratio, Total Fees-to-Transaction Ratio.
+Reason: The core of RegZ violations lies within how APR rates are applied, fees are charged, and credit is used, all of which are reflected in the transaction data.
+Customer Experience Dataset:
+
+Features: Delinquency Status, High-Interest Frequency, Account Age, Loan Cap Adjustment Frequency.
+Reason: Customer experience data reflects financial behavior, payment patterns, and account health, which directly influences APR violations.
+Billing Statement Dataset:
+
+Features: Total Fees-to-Transaction Ratio, High-Interest Frequency.
+Reason: Billing data reveals the customer's fee structure, which is crucial in determining whether APR rates are applied correctly.
+Regulatory Classification Dataset:
+
+Features: Regulatory Classification Interaction.
+Reason: Understanding how customers fall under specific regulatory constraints helps identify anomalies in APR handling.
+Next Steps:
+Feature Scaling: Ensure the features are scaled appropriately before feeding them into anomaly detection models (e.g., using StandardScaler or MinMaxScaler).
+Modeling: Use unsupervised models like Isolation Forest or One-Class SVM to detect anomalous patterns that indicate APR misuse or RegZ violations.

@@ -1,0 +1,130 @@
+Updated Python Code for Consent Violation in Communications
+Here’s an alternative implementation using string and re for text analysis.
+
+python
+Copy code
+import pandas as pd
+import numpy as np
+import re
+from sklearn.ensemble import IsolationForest
+from sklearn.preprocessing import StandardScaler
+from mlxtend.frequent_patterns import fpgrowth, association_rules
+
+# Load datasets
+complaints = pd.read_csv("complaints.csv")
+journey = pd.read_csv("journey.csv")
+
+# ------------------------------------
+# 1. Feature Engineering with String/Regex
+# ------------------------------------
+
+# Define consent-related terms
+consent_terms = ['consent', 'opt-out', 'unauthorized', 'contact', 'violation']
+
+def extract_keywords_regex(text):
+    """Extract keywords matching consent-related terms using regex."""
+    if pd.isnull(text):
+        return []
+    matches = re.findall(r'\b(?:' + '|'.join(consent_terms) + r')\b', text.lower())
+    return matches
+
+def contains_consent_keywords(text):
+    """Flag complaints with consent-related keywords."""
+    if pd.isnull(text):
+        return 0
+    return int(bool(re.search(r'\b(?:' + '|'.join(consent_terms) + r')\b', text.lower())))
+
+# Apply keyword extraction and flagging
+complaints['keywords'] = complaints['complaint_description'].apply(extract_keywords_regex)
+complaints['consent_complaint_flag'] = complaints['complaint_description'].apply(contains_consent_keywords)
+
+# Flag complaints mentioning opt-out or no communication
+complaints['opted_out_flag'] = complaints['complaint_status'].str.contains(
+    r'\bopted out\b|\bno communication\b', case=False, na=False
+).astype(int)
+
+# ------------------------------------
+# 2. FP-Growth for Journey Events
+# ------------------------------------
+
+# One-hot encode journey event data for pattern mining
+event_matrix = pd.get_dummies(journey[['ccid', 'event_nm']], columns=['event_nm'], prefix='', prefix_sep='')
+event_matrix = event_matrix.groupby('ccid').max().reset_index()
+
+# Apply FP-Growth to find frequent patterns in event data
+frequent_patterns = fpgrowth(event_matrix.drop(columns=['ccid']), min_support=0.05, use_colnames=True)
+rules = association_rules(frequent_patterns, metric="confidence", min_threshold=0.7)
+
+# Extract high-confidence rules involving unauthorized events
+unauthorized_rules = rules[rules['consequents'].apply(lambda x: 'unauthorized_event' in x)]
+
+# Add unauthorized event flag based on FP-Growth results
+journey['unauthorized_event_flag'] = journey['event_nm'].apply(
+    lambda x: 1 if x in unauthorized_rules['antecedents'].explode().unique() else 0
+)
+
+# ------------------------------------
+# 3. Aggregate Features
+# ------------------------------------
+
+# Journey Features
+journey['repeat_contact_flag'] = journey['visit_count'] > 5  # Example threshold
+
+# Merge Datasets
+merged_data = pd.merge(journey, complaints, left_on='ccid', right_on='CCID', how='left')
+
+# Aggregate features
+merged_data['non_opted_contact_ratio'] = (
+    merged_data.groupby('ccid')['repeat_contact_flag'].transform('sum') /
+    merged_data.groupby('ccid')['visit_count'].transform('sum')
+)
+merged_data.fillna(0, inplace=True)
+
+# ------------------------------------
+# 4. Isolation Forest for Anomaly Detection
+# ------------------------------------
+
+features = ['opted_out_flag', 'consent_complaint_flag', 'non_opted_contact_ratio',
+            'unauthorized_event_flag', 'repeat_contact_flag']
+X = merged_data[features]
+
+# Normalize Features
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
+
+# Apply Isolation Forest
+isolation_forest = IsolationForest(contamination=0.01, random_state=42)
+merged_data['anomaly_score'] = isolation_forest.fit_predict(X_scaled)
+
+# Rule-based anomalies
+merged_data['rule_violation'] = (
+    (merged_data['opted_out_flag'] == 1) |
+    (merged_data['consent_complaint_flag'] == 1) |
+    (merged_data['repeat_contact_flag'] == 1)
+).astype(int)
+
+# Combine Results
+merged_data['final_flag'] = (merged_data['anomaly_score'] == -1) | (merged_data['rule_violation'] == 1)
+
+# Save Results
+merged_data.to_csv("consent_violation_anomalies_updated.csv", index=False)
+Changes Made:
+Text Analysis Using re and str:
+
+Used regular expressions to search for consent-related terms (consent, opt-out, etc.) in complaint descriptions.
+Replaced NLTK-based tokenization and filtering with lightweight regex for keyword extraction.
+Regex Flags:
+
+opted_out_flag: Uses regex to flag complaints mentioning "opt-out" or "no communication".
+FP-Growth:
+
+Identifies frequent patterns in journey events to detect unauthorized communication behavior.
+Isolation Forest:
+
+Combines statistical anomaly detection with regex-based feature flags.
+Assumptions:
+The regex patterns sufficiently capture relevant terms related to TCPA violations.
+FP-Growth effectively highlights patterns in event data for unauthorized interactions.
+Results:
+Performance: Lightweight implementation that avoids dependency on NLP libraries.
+Output: Detected anomalies are stored in consent_violation_anomalies_updated.csv

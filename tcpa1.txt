@@ -1,0 +1,248 @@
+import pandas as pd
+import numpy as np
+from scipy.stats import entropy
+from textblob import TextBlob
+from sklearn.preprocessing import OneHotEncoder, LabelEncoder
+
+# Load Dummy Dataset (or generate the merged dataset from the previous code)
+merged_data = pd.read_csv("dummy_dataset_tcp.csv")
+
+# 1. **Complaint Features**
+# a. Time to Acknowledge Complaint
+merged_data['time_to_acknowledge'] = (
+    pd.to_datetime(merged_data['ack_received_date'], errors='coerce') - 
+    pd.to_datetime(merged_data['complaint_create_date'], errors='coerce')
+).dt.days
+
+# b. Complaint Frequency
+merged_data['complaint_frequency'] = merged_data.groupby('temp_key')['complaint_status'].transform('count')
+
+# c. Complaint Sentiment Polarity
+merged_data['complaint_sentiment'] = merged_data['complaint_description'].fillna("").apply(
+    lambda x: TextBlob(x).sentiment.polarity
+)
+
+# d. Complaint Classification Ratio (TCPA-specific complaints)
+tcp_complaint_ratio = merged_data['regulatory_classification_1'].value_counts(normalize=True).get("TCPA", 0)
+merged_data['tcp_complaint_ratio'] = merged_data['temp_key'].map(lambda x: tcp_complaint_ratio)
+
+# e. Complaint Status Encoding
+merged_data['complaint_status_encoded'] = LabelEncoder().fit_transform(merged_data['complaint_status'].fillna("Unknown"))
+
+# 2. **Profitability Features**
+# a. Expense-to-Revenue Ratio
+merged_data['expense_to_revenue_ratio'] = merged_data['total_expense_amt'] / (
+    merged_data['revenue_amortized_amt'] + 1e-5
+)
+
+# b. Average Cost Per Service Call
+merged_data['avg_cost_per_call'] = (
+    merged_data['cost_cust_serv_call_amt'] + merged_data['cost_rten_call_amt']
+) / merged_data['complaint_frequency']
+
+# c. Rebate Impact on Revenue
+merged_data['rebate_impact'] = merged_data['acc_aff_rebate_amt'] / (
+    merged_data['revenue_amortized_amt'] + 1e-5
+)
+
+# 3. **Transaction Features**
+# a. Transaction Variability
+merged_data['transaction_variability'] = merged_data.groupby('temp_key')['transaction_amount'].transform('std')
+
+# b. Average Transaction Amount
+merged_data['avg_transaction_amt'] = merged_data.groupby('temp_key')['transaction_amount'].transform('mean')
+
+# c. High-Risk MCC Proportion
+high_risk_mcc = ["5411", "5812"]  # Example high-risk MCC codes
+merged_data['high_risk_mcc_proportion'] = merged_data['merchant_category_code'].isin(high_risk_mcc).astype(int)
+
+# d. Foreign Transaction Proportion
+merged_data['foreign_transaction_ratio'] = (
+    merged_data['foreign_currency_code'] != "USD"
+).astype(int).groupby(merged_data['temp_key']).transform('mean')
+
+# e. Days Between Transactions
+merged_data['transaction_date'] = pd.to_datetime(merged_data['complaint_create_date'], errors='coerce')
+merged_data['days_between_transactions'] = merged_data.groupby('temp_key')['transaction_date'].diff().dt.days
+
+# 4. **Journey Features**
+# a. Interaction Entropy
+journey_entropy = merged_data.groupby('temp_key')['event_name'].apply(
+    lambda x: entropy(x.value_counts(normalize=True))
+)
+merged_data['interaction_entropy'] = merged_data['temp_key'].map(journey_entropy)
+
+# b. Recency of Last Interaction
+merged_data['last_interaction_days'] = (
+    pd.to_datetime("2024-12-01") - pd.to_datetime(merged_data['complaint_create_date'], errors='coerce')
+).dt.days
+
+# c. Visit Count Normalization
+merged_data['visit_count_normalized'] = merged_data['visit_count'] / (
+    merged_data.groupby('temp_key')['visit_count'].transform('sum') + 1e-5
+)
+
+# d. Sequential Behavior Encoding
+merged_data['sequential_event'] = merged_data.groupby('temp_key')['event_name'].transform(lambda x: x.mode()[0])
+
+# 5. **Billing Features**
+# a. Credit Utilization Ratio
+merged_data['credit_utilization_ratio'] = merged_data['loan_cap_amt'] / (
+    merged_data['total_credit_limit'] + 1e-5
+)
+
+# b. Disputed Amount Ratio
+merged_data['disputed_amount_ratio'] = merged_data['cust_disput_purch_amt'] / (
+    merged_data['loan_cap_amt'] + 1e-5
+)
+
+# c. Over Credit Limit Indicator
+merged_data['over_credit_limit'] = (merged_data['ocl_fee_3x_ct'] > 3).astype(int)
+
+# 6. **Advanced Techniques**
+# a. Graph-Based Features (Customer Complaints)
+from scipy.spatial.distance import cosine
+
+complaint_vectors = merged_data[['time_to_acknowledge', 'complaint_frequency', 'complaint_sentiment']].fillna(0).values
+merged_data['graph_similarity'] = [
+    1 - cosine(complaint_vectors[i], complaint_vectors[j])
+    for i, j in zip(range(len(complaint_vectors)), range(len(complaint_vectors)))
+]
+
+# b. Behavioral Entropy
+merged_data['behavioral_entropy'] = entropy(
+    merged_data.groupby('temp_key')['transaction_amount'].value_counts(normalize=True), base=2
+)
+
+# c. Textual Embedding Features
+merged_data['complaint_embedding'] = merged_data['complaint_description'].apply(
+    lambda x: np.mean([ord(c) for c in str(x)])  # Simplified embedding for illustration
+)
+
+# d. Polynomial Feature Interactions
+merged_data['polynomial_interaction'] = (
+    merged_data['total_expense_amt'] * merged_data['avg_transaction_amt']
+)
+
+# e. Temporal Aggregations
+merged_data['transaction_weekday'] = merged_data['transaction_date'].dt.weekday
+merged_data['transaction_hour'] = merged_data['transaction_date'].dt.hour
+
+
+
+
+
+
+
+
+---------------
+---------------------------------------
+-----------------------------------------------------
+
+
+1. Complaint Features
+a. Time to Acknowledge Complaint
+Description: Measures the number of days it took to acknowledge a customer complaint.
+Relevance: TCPA regulations require timely responses to complaints, particularly those related to unauthorized robocalls or other consent-related violations.
+Why it helps: Unusually high acknowledgment times may indicate breakdowns in compliance processes, signaling potential TCPA violations.
+b. Complaint Frequency
+Description: Counts the number of complaints a customer has filed.
+Relevance: Frequent complaints could indicate unresolved issues or systemic failures in addressing TCPA violations.
+Why it helps: Customers with repeated complaints related to the same issue may highlight recurring compliance gaps.
+c. Complaint Sentiment Polarity
+Description: Analyzes the sentiment (positive, negative, neutral) of the complaint description text.
+Relevance: Negative sentiment in complaints could indicate dissatisfaction due to perceived violations of TCPA obligations.
+Why it helps: High negative sentiment in TCPA-related complaints can uncover problematic practices, like recurring robocalls.
+d. TCPA Complaint Ratio
+Description: Proportion of TCPA-related complaints within the dataset.
+Relevance: Tracks how significant TCPA-related issues are compared to other types of complaints.
+Why it helps: A high ratio of TCPA complaints may indicate systemic issues requiring immediate investigation.
+e. Complaint Status Encoding
+Description: Encodes complaint resolution status (e.g., "Closed," "Open").
+Relevance: Allows machine learning models to assess patterns of unresolved or escalated complaints.
+Why it helps: Persistent unresolved TCPA-related complaints can signal non-compliance with regulatory requirements.
+2. Profitability Features
+a. Expense-to-Revenue Ratio
+Description: Compares total expenses to revenue.
+Relevance: High expense ratios might indicate inefficiencies in handling complaints or addressing TCPA issues.
+Why it helps: Anomalies in this ratio can flag hidden compliance costs or operational inefficiencies.
+b. Average Cost Per Service Call
+Description: Measures the average cost of handling customer service calls.
+Relevance: High call costs might reflect inefficient complaint handling processes, potentially linked to TCPA violations.
+Why it helps: A sharp rise in costs associated with TCPA-related complaints might indicate systemic issues.
+c. Rebate Impact on Revenue
+Description: Measures how rebates affect total revenue.
+Relevance: TCPA violations could lead to increased rebate requests as compensation for unauthorized robocalls.
+Why it helps: Unusually high rebate-to-revenue ratios might indicate financial impacts due to non-compliance.
+3. Transaction Features
+a. Transaction Variability
+Description: Calculates the standard deviation of transaction amounts for a customer.
+Relevance: TCPA violations might correlate with irregular transaction patterns if customers penalize the bank by withdrawing balances.
+Why it helps: Variability in transaction amounts could be a red flag for affected customers.
+b. Average Transaction Amount
+Description: Mean transaction amount for each customer.
+Relevance: Consistent low transactions could indicate customer dissatisfaction caused by TCPA violations.
+Why it helps: Helps establish a baseline for detecting deviations.
+c. High-Risk MCC Proportion
+Description: Proportion of transactions tied to high-risk merchant category codes (MCC).
+Relevance: High-risk MCCs may involve aggressive marketing practices that could violate TCPA consent rules.
+Why it helps: Detects patterns where TCPA violations occur more frequently in specific industries.
+d. Foreign Transaction Proportion
+Description: Percentage of transactions conducted in foreign currencies.
+Relevance: Unauthorized robocalls may originate from international locations.
+Why it helps: Flags foreign transaction patterns that may correlate with TCPA violations.
+e. Days Between Transactions
+Description: Calculates the gap between consecutive transactions.
+Relevance: Customers impacted by TCPA violations might reduce activity, leading to irregular transaction gaps.
+Why it helps: Identifies deviations in customer behavior patterns.
+4. Journey Features
+a. Interaction Entropy
+Description: Measures the diversity of customer interactions.
+Relevance: TCPA violations might trigger a wide variety of customer inquiries or complaints.
+Why it helps: Low entropy could indicate that interactions are heavily focused on complaints related to a specific issue, such as TCPA violations.
+b. Recency of Last Interaction
+Description: Days since the last customer interaction.
+Relevance: Recent interactions are important for tracking how quickly issues are resolved.
+Why it helps: High recency might indicate neglect in addressing TCPA complaints.
+c. Visit Count Normalization
+Description: Normalizes visit counts across customers.
+Relevance: Tracks customer engagement levels, which might drop after TCPA violations.
+Why it helps: Identifies patterns where customer engagement reduces drastically.
+d. Sequential Event Encoding
+Description: Encodes the most frequent event type for each customer.
+Relevance: Customers repeatedly engaging with complaint processes could indicate compliance failures.
+Why it helps: Highlights customers consistently involved in compliance-related events.
+5. Billing Features
+a. Credit Utilization Ratio
+Description: Ratio of loan capital to total credit limit.
+Relevance: Customers impacted by TCPA violations may exhibit reduced credit utilization due to dissatisfaction.
+Why it helps: Detects financial disengagement trends.
+b. Disputed Amount Ratio
+Description: Proportion of disputed amounts to total loan capital.
+Relevance: TCPA violations might result in disputed charges for services customers did not authorize.
+Why it helps: Flags customers frequently disputing charges.
+c. Over Credit Limit Indicator
+Description: Flags customers who exceed credit limits frequently.
+Relevance: Frequent over-limit activity might correlate with complaints about unauthorized charges or communications.
+Why it helps: Identifies risk-prone customers affected by systemic compliance issues.
+6. Advanced Techniques
+a. Graph-Based Features
+Description: Measures similarity between customer complaint vectors using cosine distance.
+Relevance: Identifies clusters of customers experiencing similar TCPA violations.
+Why it helps: Groups systemic compliance issues for proactive remediation.
+b. Behavioral Entropy
+Description: Measures variability in transaction behavior.
+Relevance: Anomalies in behavior might correlate with dissatisfaction after TCPA violations.
+Why it helps: Helps detect sudden changes in customer activity.
+c. Textual Embedding Features
+Description: Embeds complaint descriptions into numerical representations.
+Relevance: Analyzes textual data to detect patterns related to TCPA violations.
+Why it helps: Captures hidden textual signals.
+d. Polynomial Feature Interactions
+Description: Interacts multiple features to detect non-linear patterns.
+Relevance: Non-linear relationships might reveal complex compliance breakdowns.
+Why it helps: Uncovers hard-to-detect anomalies.
+e. Temporal Aggregations
+Description: Analyzes transaction patterns by weekday and hour.
+Relevance: TCPA violations often correlate with specific timing patterns (e.g., illegal calls outside business hours).
+Why it helps: Detects anomalies in interaction timing.

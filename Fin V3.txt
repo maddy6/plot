@@ -1,0 +1,127 @@
+If you prefer an alternative to graph-based embeddings, we can replace Graph Embeddings with Latent Dirichlet Allocation (LDA) for topic modeling or Principal Component Analysis (PCA) to reduce and embed multi-dimensional relationships.
+
+Here’s an updated Advanced Approach without graph embeddings:
+
+Replacement: Latent Dirichlet Allocation (LDA) for Topic Modeling
+Why LDA?
+
+It identifies underlying topics in categorical or text data like complaint_description, journey events, or agent interactions.
+Each entity (e.g., ccid, case_id, etc.) is represented as a probability distribution over topics, which can then be used as features for anomaly detection.
+Implementation with LDA
+1. Data Preparation for LDA
+Prepare the complaint_description and journey data for LDA.
+
+python
+Copy code
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.decomposition import LatentDirichletAllocation
+
+# Prepare complaint descriptions and journey events
+corpus = complaints['complaint_description'].fillna('') + ' ' + journey['event_nm'].fillna('')
+
+# Convert text into a document-term matrix
+vectorizer = CountVectorizer(stop_words='english', max_features=5000)
+dtm = vectorizer.fit_transform(corpus)
+
+# Extract feature names for interpretability
+feature_names = vectorizer.get_feature_names_out()
+2. LDA Modeling
+Fit an LDA model to extract topics.
+
+python
+Copy code
+# Fit LDA to the document-term matrix
+lda = LatentDirichletAllocation(n_components=10, random_state=42)  # 10 topics
+lda.fit(dtm)
+
+# Transform each document into its topic distribution
+topic_distributions = lda.transform(dtm)
+
+# Add topic distributions as features
+for i in range(10):
+    complaints[f'topic_{i}'] = topic_distributions[:, i]
+Clustering and Anomaly Detection with LDA Features
+Now use the LDA topic distributions combined with text embeddings for anomaly detection.
+
+1. Combine Features
+Concatenate LDA topic distributions with BERT embeddings.
+
+python
+Copy code
+import numpy as np
+
+# Combine text embeddings (from BERT) and LDA topic distributions
+combined_features = np.hstack([
+    embeddings_matrix,  # From BERT embeddings
+    topic_distributions  # From LDA
+])
+2. Clustering with DBSCAN
+Use clustering to detect anomalies in the combined feature space.
+
+python
+Copy code
+from sklearn.cluster import DBSCAN
+from sklearn.preprocessing import StandardScaler
+
+# Normalize the combined feature set
+scaler = StandardScaler()
+normalized_features = scaler.fit_transform(combined_features)
+
+# Apply DBSCAN clustering
+dbscan = DBSCAN(eps=1.5, min_samples=5)
+dbscan_labels = dbscan.fit_predict(normalized_features)
+
+# Identify anomalies (label -1 is noise)
+complaints['dbscan_anomaly'] = (dbscan_labels == -1).astype(int)
+Autoencoder-Based Reconstruction for Anomalies
+Fit an autoencoder to the combined features and use reconstruction errors.
+
+python
+Copy code
+from tensorflow.keras.models import Model
+from tensorflow.keras.layers import Input, Dense
+
+# Define Autoencoder
+input_dim = normalized_features.shape[1]
+encoding_dim = 32
+
+input_layer = Input(shape=(input_dim,))
+encoded = Dense(encoding_dim, activation='relu')(input_layer)
+decoded = Dense(input_dim, activation='sigmoid')(encoded)
+
+autoencoder = Model(inputs=input_layer, outputs=decoded)
+autoencoder.compile(optimizer='adam', loss='mse')
+
+# Train Autoencoder
+autoencoder.fit(normalized_features, normalized_features, epochs=50, batch_size=256, shuffle=True)
+
+# Calculate reconstruction errors
+reconstructed = autoencoder.predict(normalized_features)
+reconstruction_errors = np.mean((normalized_features - reconstructed)**2, axis=1)
+
+# Flag anomalies
+threshold = np.percentile(reconstruction_errors, 95)
+complaints['autoencoder_anomaly'] = (reconstruction_errors > threshold).astype(int)
+Combine Anomaly Scores
+Aggregate results from DBSCAN and autoencoder.
+
+python
+Copy code
+# Final anomaly score (weighted combination)
+complaints['final_anomaly_score'] = (
+    complaints['dbscan_anomaly'] * 0.4 +  # DBSCAN anomaly
+    complaints['autoencoder_anomaly'] * 0.6  # Autoencoder anomaly
+)
+
+# Final anomaly flag
+complaints['final_anomaly_flag'] = (complaints['final_anomaly_score'] > 0.5).astype(int)
+
+# Save anomalies
+anomalies = complaints[complaints['final_anomaly_flag'] == 1]
+anomalies.to_csv("advanced_consent_anomalies.csv", index=False)
+Why This Approach?
+Topic Modeling (LDA): Captures patterns in text-based data that represent complaint themes and interactions, offering an alternative to graph embeddings.
+Text Embeddings (BERT): Retains semantic relationships for contextual understanding.
+Clustering (DBSCAN): Separates dense regions of normal behavior from sparse outliers.
+Reconstruction (Autoencoder): Identifies anomalies by evaluating records with high reconstruction errors.
+Would you like further optimization (e.g., hyperparameter tuning or alternative unsupervised models)?

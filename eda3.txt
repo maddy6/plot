@@ -1,0 +1,151 @@
+1. Text Preprocessing with Regular Expressions (Regex)
+We will use regular expressions for text cleaning (removing punctuation, numbers, and extra spaces) and convert the text to lowercase.
+
+Code: Text Preprocessing with Regular Expressions
+python
+Copy code
+import re
+import pandas as pd
+
+# Example dataset (replace with your actual data)
+dummy_data = pd.DataFrame({
+    'complaint_text': ['This is a complaint about robocalls.', 
+                       'I am tired of receiving unsolicited marketing calls.', 
+                       'Too many telemarketer calls!']
+})
+
+# Function to clean the text (remove punctuation, convert to lowercase, etc.)
+def clean_text(text):
+    text = re.sub(r'[^a-zA-Z\s]', '', text.lower())  # Remove non-alphabetic characters
+    text = re.sub(r'\s+', ' ', text).strip()  # Remove extra spaces
+    return text
+
+# Apply text cleaning to the 'complaint_text' column
+dummy_data['processed_complaint'] = dummy_data['complaint_text'].apply(clean_text)
+
+# Show cleaned text
+print(dummy_data[['complaint_text', 'processed_complaint']])
+2. Sentiment Analysis with TextBlob
+We will use TextBlob for simple sentiment analysis to classify complaints into positive, negative, or neutral sentiments. This is effective for identifying complaints related to TCPA violations.
+
+Code: Sentiment Analysis with TextBlob
+python
+Copy code
+from textblob import TextBlob
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Function to calculate sentiment polarity using TextBlob
+def get_sentiment(text):
+    blob = TextBlob(text)
+    return blob.sentiment.polarity  # Returns polarity score (-1 to 1)
+
+# Apply sentiment analysis to the processed complaint text
+dummy_data['sentiment_score'] = dummy_data['processed_complaint'].apply(get_sentiment)
+
+# Classify sentiment as positive, negative, or neutral
+dummy_data['sentiment'] = dummy_data['sentiment_score'].apply(lambda x: 'positive' if x > 0 else ('negative' if x < 0 else 'neutral'))
+
+# Plot the distribution of sentiment
+plt.figure(figsize=(10, 6))
+sns.countplot(x='sentiment', data=dummy_data, palette='coolwarm')
+plt.title('Sentiment Distribution of Complaints')
+plt.xlabel('Sentiment')
+plt.ylabel('Number of Complaints')
+plt.show()
+
+# Show the data with sentiment labels
+print(dummy_data[['complaint_text', 'sentiment']])
+3. Frequency Analysis and Word Cloud (for Topics)
+We will use CountVectorizer to extract the most frequent words and create a word cloud to visualize the most frequent terms related to complaints.
+
+Code: Frequency Analysis with CountVectorizer and Word Cloud
+python
+Copy code
+from sklearn.feature_extraction.text import CountVectorizer
+from wordcloud import WordCloud
+
+# Initialize CountVectorizer to get the top frequent words
+vectorizer = CountVectorizer(stop_words='english', max_features=20)  # Limit to top 20 words
+X = vectorizer.fit_transform(dummy_data['processed_complaint'])
+
+# Get the top words
+top_words = vectorizer.get_feature_names_out()
+
+# Generate a word cloud
+wordcloud = WordCloud(width=800, height=400, background_color='white').generate_from_frequencies(dict(zip(top_words, X.sum(axis=0).tolist()[0])))
+
+# Display the word cloud
+plt.figure(figsize=(10, 6))
+plt.imshow(wordcloud, interpolation='bilinear')
+plt.axis('off')
+plt.show()
+4. Basic Topic Modeling with Bag of Words
+Although we won’t use complex models like LDA, we can still perform basic topic modeling by using CountVectorizer to extract frequent terms.
+
+Code: Basic Topic Modeling with Bag of Words
+python
+Copy code
+from sklearn.decomposition import LatentDirichletAllocation
+
+# Initialize LDA model to find topics
+lda = LatentDirichletAllocation(n_components=3, random_state=42)  # Let's find 3 topics
+lda_topics = lda.fit_transform(X)
+
+# Show the top words for each topic
+n_top_words = 10
+for index, topic in enumerate(lda.components_):
+    print(f"Topic {index + 1}:")
+    print([top_words[i] for i in topic.argsort()[-n_top_words:]])
+
+# You can also visualize the topics using a bar chart or further analysis
+5. Named Entity Recognition with Regular Expressions
+Instead of spaCy, we can use regular expressions to identify potential named entities like company names, locations, and dates (though more complex NER would require a specialized model, this is a simplified version).
+
+Code: Simple Named Entity Recognition (with Regex)
+python
+Copy code
+import re
+
+# Function to find potential named entities (e.g., company names, locations, and dates)
+def extract_named_entities(text):
+    # Simplified pattern to find capitalized words (potential entities)
+    return re.findall(r'\b[A-Z][a-z]*\b', text)
+
+# Apply entity extraction
+dummy_data['entities'] = dummy_data['complaint_text'].apply(extract_named_entities)
+
+# Show the entities found in complaints
+print(dummy_data[['complaint_text', 'entities']])
+6. Simple Classification of Complaints Using Keywords
+You can classify complaints into categories such as "robocalls" or "harassment" by checking for keywords in the complaint text.
+
+Code: Simple Keyword-based Classification
+python
+Copy code
+def classify_complaint(text):
+    if 'robocall' in text or 'telemarketing' in text:
+        return 'Robocall/Telemarketing'
+    elif 'harassment' in text:
+        return 'Harassment'
+    else:
+        return 'Other'
+
+# Apply the classification function
+dummy_data['complaint_category'] = dummy_data['processed_complaint'].apply(classify_complaint)
+
+# Show the categorized complaints
+print(dummy_data[['complaint_text', 'complaint_category']])
+Key Explanations for Each Step:
+Text Preprocessing with Regex: This simple approach removes unwanted characters and normalizes text (e.g., lowercasing) to ensure clean data for further analysis.
+
+Sentiment Analysis with TextBlob: By analyzing the polarity of complaints, we can categorize complaints into positive, negative, or neutral sentiments. Negative complaints can point to potential TCPA violations.
+
+Frequency Analysis & Word Cloud: Using CountVectorizer, we can identify the most frequent terms in complaints and visualize them through a word cloud, helping to understand common issues (e.g., “robocall,” “telemarketing”).
+
+Topic Modeling with Bag of Words: Latent Dirichlet Allocation (LDA) is used to discover potential topics in complaints, helping identify common themes or issues.
+
+Named Entity Recognition (NER): Using regular expressions, we extract capitalized words which might represent named entities like companies or locations.
+
+Complaint Classification: A simple approach is used to classify complaints into predefined categories like Robocalls or Harassment based on keyword matching.
+
