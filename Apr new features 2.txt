@@ -1,3 +1,8 @@
+
+
+
+
+
 Here is a detailed explanation of how and why each group of features can capture anomaly patterns relevant to Regulation Z (RegZ) compliance use cases. RegZ primarily deals with ensuring fair and transparent credit and lending practices, focusing on APR calculations, fees, disclosures, and consumer protection.
 
 
@@ -254,6 +259,253 @@ Why: Helps detect overcharging or excessive penalties.
 How: Difference between APR and aggregated fees.
 
 Why: Validates APR accuracy and compliance with disclosure requirements.
+
+
+
+
+
+Here’s a detailed breakdown of the Merchant and Geospatial Features and Temporal Features, focusing on how and why they help identify anomalies in RegZ use cases:
+
+
+---
+
+Merchant and Geospatial Features
+
+1. MTC (Merchant Transaction Consistency)
+
+How: This is calculated as the ratio of unique merchants to the total transaction count for a user.
+
+Why:
+
+Helps identify users repeatedly transacting with a few merchants, which could indicate fraud, favoritism, or exploitation of APR loopholes.
+
+Inconsistent ratios might reveal unusual behavior such as collusion between merchants and users or errors in merchant mapping.
+
+
+
+
+---
+
+2. ZCSD (Zip Code Spending Density)
+
+How: The proportion of a user’s total transaction amount concentrated in a specific zip code.
+
+Why:
+
+Highlights geographic anomalies, such as unusually high spending outside a user’s typical region, which could signal fraud or errors in merchant location data.
+
+Essential for detecting geographic clustering in RegZ violations (e.g., unauthorized fees applied in certain regions).
+
+
+
+
+---
+
+3. GFV (Geographic Fee Variability)
+
+How: Standard deviation of foreign fee amounts for transactions grouped by zip code.
+
+Why:
+
+High variability suggests inconsistent fee application across locations, which might violate RegZ’s transparency requirements.
+
+Useful for identifying zip codes where fee anomalies are concentrated.
+
+
+
+
+---
+
+4. MLFI (Merchant-Level Fee Intensity)
+
+How: Average fee amount per merchant, aggregated across users.
+
+Why:
+
+Detects merchants charging unusually high or low fees, potentially violating fair fee disclosure rules.
+
+Helps monitor merchant-specific behaviors that deviate from industry norms.
+
+
+
+
+---
+
+5. HRMR (High-Risk Merchant Ratio)
+
+How: Proportion of transactions flagged with high-risk merchants for a user.
+
+Why:
+
+Ensures high-risk merchants are not overly involved in user transactions, which could indicate fraudulent behavior or APR exploitation.
+
+Regulatory checks often focus on monitoring high-risk merchants to avoid systemic abuses.
+
+
+
+
+---
+
+6. TCR (Transaction Count Ratio)
+
+How: Ratio of unique merchants to the total number of transactions for a user.
+
+Why:
+
+Tracks merchant diversity. Low diversity may indicate an over-reliance on specific merchants, signaling potential abuse or irregular activity.
+
+
+
+
+---
+
+7. CMTS (Common Merchant Transaction Spike)
+
+How: The frequency of the most common merchant for a user.
+
+Why:
+
+Repeated transactions with a single merchant may suggest batch processing errors, exploitation of promotional benefits, or collusion between merchants and users.
+
+Identifies unusual relationships between users and specific merchants.
+
+
+
+
+---
+
+8. MSD (Merchant Spend Deviation)
+
+How: Standard deviation of transaction amounts at individual merchants.
+
+Why:
+
+Large deviations may indicate errors in transaction recording or unusual merchant-level pricing anomalies.
+
+Captures irregular spending patterns that might correlate with fee misclassification or APR miscalculations.
+
+
+
+
+---
+
+9. GSS (Geographic Spending Spike)
+
+How: Counts the number of transactions significantly exceeding the mean in specific locations.
+
+Why:
+
+Detects fraud or unusual activity in specific geographic areas, such as concentrated large transactions.
+
+Useful for identifying regions prone to systemic fee or transaction mismanagement.
+
+
+
+
+---
+
+10. FSD (Foreign Spending Density)
+
+How: Ratio of foreign spending to total spending within a zip code.
+
+Why:
+
+Identifies zip codes with unusually high foreign transaction activity, signaling potential systemic misuse of fee structures.
+
+Ensures foreign fees align with typical spending behavior.
+
+
+
+
+---
+
+Temporal Features
+
+1. TTD (Transaction Time Deviation)
+
+How: Standard deviation of time differences between consecutive transactions for a user.
+
+Why:
+
+Large deviations indicate irregular transaction timings, such as sudden activity spikes or periods of inactivity, signaling potential fraud or misuse.
+
+
+
+
+---
+
+2. LPT (Long Payment Timelines)
+
+How: Counts instances where time between transactions exceeds 30 days for a user.
+
+Why:
+
+Tracks users with irregular transaction patterns or missed payments, which may violate RegZ payment terms or APR calculations.
+
+Highlights cases where payment gaps may cause unauthorized fees or rate adjustments.
+
+
+
+
+---
+
+3. TODP (Time of Day Payment Patterns)
+
+How: Aggregates transaction amounts grouped by hour of the day.
+
+Why:
+
+Identifies unusual time-of-day spending, such as excessive late-night transactions, which could signal fraud or atypical user behavior.
+
+
+
+
+---
+
+4. HTS (Hourly Transaction Spikes)
+
+How: Captures the maximum number of transactions occurring within a single hour for a user.
+
+Why:
+
+Highlights unusual spikes, such as system errors or batch processing anomalies, which could result in misapplied fees.
+
+
+
+
+---
+
+5. MTC (Monthly Transaction Consistency)
+
+How: Measures the duration (in months) of consistent transactions for a user.
+
+Why:
+
+Tracks whether users maintain regular payment or transaction schedules, highlighting irregularities like skipped months or erratic spending.
+
+Ensures compliance with recurring transaction fee disclosures.
+
+
+
+
+---
+
+6. TPT (Transaction Posting Time)
+
+How: Difference (in seconds) between the sale date (sale_dt) and the bank network processing date (bnk_net_mmdd).
+
+Why:
+
+Long delays in posting transactions might violate RegZ guidelines for prompt disclosure and fee calculation.
+
+Helps identify systemic delays in processing, leading to incorrect APR applications.
+
+
+
+
+---
+
+These features provide critical insights into user behavior, merchant interactions, geographic patterns, and temporal trends, making them invaluable for uncovering complex and hidden anomalies in RegZ compliance. Let me know if you need code or further explanations!
 
 
 
