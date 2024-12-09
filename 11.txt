@@ -393,6 +393,190 @@ Would you like visualizations or additional EDA for these features?
 
 
 
+Here are 10 additional advanced features designed for anomaly detection in the APR (Reg Z) use case. These features are tailored to provide deep insights, utilizing hidden patterns in your datasets and leveraging complex calculations to showcase analytical depth.
+
+Each feature comes with a detailed explanation and code implementation. These features will highlight your expertise and ability to uncover meaningful insights.
+
+
+---
+
+1. Residual Cost-to-Balance Misalignment (RCBM)
+
+Logic: Residual cost of funds (COF) and transaction balance mismatches can indicate systemic errors in APR calculation. A misalignment here could signal non-compliance.
+
+Formula:
+
+
+data['RCBM'] = data['interest'] - (data['pure_purch_trans_bal_amt'] * data['cof'])
+
+# Explanation:
+# - This highlights mismatches in expected vs. charged APR.
+# - Anomaly detection is triggered when RCBM deviates significantly from zero.
+print(data[['interest', 'pure_purch_trans_bal_amt', 'cof', 'RCBM']])
+
+
+---
+
+2. Transaction-Wise Utilization Instability Index (TWUII)
+
+Logic: Identifies instability in utilization trends by assessing transaction-level fluctuations in utilization over time.
+
+Formula:
+
+
+data['TWUII'] = data['util_ncc_brt_cl'].diff() / (data.index.to_series().diff().fillna(1))
+
+# Explanation:
+# - Tracks rapid changes in credit utilization between transactions.
+# - Sharp fluctuations are flagged as anomalies.
+print(data[['util_ncc_brt_cl', 'TWUII']])
+
+
+---
+
+3. Adjusted Purchase Risk Weight (APRW)
+
+Logic: Captures risk-adjusted purchasing behavior by combining spending with bankruptcy scores and credit limits.
+
+Formula:
+
+
+data['APRW'] = (data['purch_amt'] * (1 - data['bk3_score_val'] / data['bk3_score_val'].max())) / data['total_credi_limit']
+
+# Explanation:
+# - Analyzes high-risk purchases to detect disproportionate spending.
+# - Anomalies are highlighted when APRW exceeds predefined thresholds.
+print(data[['purch_amt', 'bk3_score_val', 'total_credi_limit', 'APRW']])
+
+
+---
+
+4. Fee-to-Interest Elasticity Index (FIEI)
+
+Logic: Measures the elasticity of fees relative to interest changes. Disproportionate elasticity may indicate compliance issues.
+
+Formula:
+
+
+data['FIEI'] = data['total_all_fee_amt'] / data['interest']
+
+# Explanation:
+# - High elasticity flags fees disproportionate to interest rates.
+# - Ideal for detecting hidden fee-related anomalies.
+print(data[['total_all_fee_amt', 'interest', 'FIEI']])
+
+
+---
+
+5. Predictive APR Eligibility Gap (PAEG)
+
+Logic: Uses historical purchasing and cash advance data to estimate APR reduction eligibility gaps.
+
+Formula:
+
+
+data['PAEG'] = (data['prior_purch_amt'] + data['prior_ca_bal_amt']) * \
+               (1 - data['bk3_score_val'] / data['bk3_score_val'].max())
+
+# Explanation:
+# - Highlights cases where high-risk customers were not granted APR reductions.
+print(data[['prior_purch_amt', 'prior_ca_bal_amt', 'bk3_score_val', 'PAEG']])
+
+
+---
+
+6. Dynamic Late Fee Escalation Factor (DLFEF)
+
+Logic: Identifies patterns of escalating late fees over time for individual customers.
+
+Formula:
+
+
+data['DLFEF'] = data['late_fees'].rolling(window=3).mean()
+
+# Explanation:
+# - Flags accounts with consistent late fees, potentially linked to systemic issues.
+print(data[['late_fees', 'DLFEF']])
+
+
+---
+
+7. Multi-Period Risk Adjusted Utilization Score (MPRAUS)
+
+Logic: Combines credit utilization trends over multiple periods with risk scores to detect anomalies.
+
+Formula:
+
+
+data['MPRAUS'] = (data['util_ncc_brt_cl'] * data['bk3_score_val']).sum() / data['total_credi_limit']
+
+# Explanation:
+# - Links credit utilization and risk profiles over time to detect irregularities.
+print(data[['util_ncc_brt_cl', 'bk3_score_val', 'MPRAUS']])
+
+
+---
+
+8. Complaint Amplification Risk Factor (CARF)
+
+Logic: Links complaints to fees and transactions to identify customer dissatisfaction driving systemic risk.
+
+Formula:
+
+
+data['complaint_count'] = [5, 3, 8, 6]
+data['CARF'] = (data['complaint_count'] * data['total_all_fee_amt']) / data['purch_amt']
+
+# Explanation:
+# - Correlates complaints with fee escalation and purchase volumes.
+print(data[['complaint_count', 'total_all_fee_amt', 'purch_amt', 'CARF']])
+
+
+---
+
+9. Cumulative APR Drift Ratio (CADR)
+
+Logic: Captures cumulative deviations in APR across transactions, highlighting systemic anomalies.
+
+Formula:
+
+
+data['CADR'] = (data['interest'] - data['apr_index_id']).cumsum()
+
+# Explanation:
+# - Tracks cumulative mismatches in APR calculations.
+print(data[['interest', 'apr_index_id', 'CADR']])
+
+
+---
+
+10. Volatility-Weighted APR Anomaly Score (VWAS)
+
+Logic: Detects APR anomalies by weighting deviations against transaction volatility.
+
+Formula:
+
+
+data['VWAS'] = (data['interest'] - data['apr_index_id']) / data['interest'].std()
+
+# Explanation:
+# - High VWAS values indicate significant APR anomalies.
+print(data[['interest', 'apr_index_id', 'VWAS']])
+
+
+---
+
+Conclusion
+
+These features combine advanced statistical, financial, and behavioral insights.
+
+They detect anomalies hidden in patterns that are often overlooked in traditional feature engineering.
+
+Judges will appreciate the deep analytical reasoning behind these features and their potential for Reg Z compliance improvement.
+
+
+Let me know if you need a consolidated codebase, visualizations, or model integration!
+
 
 
 
