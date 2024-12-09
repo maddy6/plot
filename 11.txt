@@ -784,6 +784,227 @@ Let me know if you need further assistance or enhancements!
 
 
 
+
+Let's explore ultra-advanced features that demonstrate a deeper, more intelligent understanding of APR-related anomalies and systemic irregularities. These features leverage multi-dimensional relationships, statistical transformations, and novel insights to reveal hidden insights. Each feature will be grounded in your provided datasets.
+
+
+---
+
+1. APR-Rebalancing Effectiveness Ratio (ARER)
+
+Logic: Measures the effectiveness of APR rebalancing by evaluating whether changes in APR have resulted in corresponding improvements in balances and delinquency rates.
+
+Formula:
+
+ARER = \frac{\Delta(\text{pure\_purch\_trans\_bal\_amt}) \times \Delta(\text{bk3\_score\_val})}{\Delta(\text{interest})}
+
+data['ARER'] = (data['pure_purch_trans_bal_amt'].diff() * data['bk3_score_val'].diff()) / data['interest'].diff()
+
+# Explanation:
+# - Captures the relationship between APR adjustments, balance behavior, and risk scores.
+# - Highlights accounts where APR changes fail to yield expected improvements.
+print(data[['pure_purch_trans_bal_amt', 'bk3_score_val', 'interest', 'ARER']])
+
+
+---
+
+2. Multi-Period APR Adjustment Stability Index (MPASI)
+
+Logic: Evaluates the consistency of APR adjustments across billing cycles, penalizing frequent and unexplained changes.
+
+Formula:
+
+MPASI = \text{std}(interest, \text{window}=3) / \text{mean}(interest, \text{window}=3)
+
+data['MPASI'] = data['interest'].rolling(window=3).std() / data['interest'].rolling(window=3).mean()
+
+# Explanation:
+# - Identifies accounts with inconsistent APR adjustments, potentially indicating policy gaps.
+# - Encourages focus on stability and fairness in APR setting.
+print(data[['interest', 'MPASI']])
+
+
+---
+
+3. Delinquency-Adjusted APR Pressure Index (DAPI)
+
+Logic: Combines delinquency status, fees, and APR to identify cases where APR is insufficiently addressing delinquency pressure.
+
+Formula:
+
+DAPI = \frac{\text{delnq\_stat\_cur\_mon} \times (\text{late\_fees} + \text{total\_all\_fee\_amt})}{\text{interest}}
+
+data['DAPI'] = (data['delnq_stat_cur_mon'] * (data['late_fees'] + data['total_all_fee_amt'])) / data['interest']
+
+# Explanation:
+# - Reveals accounts where delinquency management through APR adjustments is failing.
+# - Links APR to delinquency-related costs for anomaly detection.
+print(data[['delnq_stat_cur_mon', 'late_fees', 'total_all_fee_amt', 'interest', 'DAPI']])
+
+
+---
+
+4. APR-Driven Fee Recovery Efficiency (ADFRE)
+
+Logic: Evaluates whether APR adjustments effectively lead to higher net interest income after accounting for delinquency and fee losses.
+
+Formula:
+
+ADFRE = \frac{\text{net\_interest\_amt} - (\text{cost\_fix\_epymt\_amt} + \text{cost\_dlnq\_coll\_amt})}{\text{interest}}
+
+data['ADFRE'] = (data['net_interest_amt'] - (data['cost_fix_epymt_amt'] + data['cost_dlnq_coll_amt'])) / data['interest']
+
+# Explanation:
+# - Detects anomalies in APR adjustments failing to drive fee recovery.
+# - Balances interest income against delinquency and fee-related losses.
+print(data[['net_interest_amt', 'cost_fix_epymt_amt', 'cost_dlnq_coll_amt', 'interest', 'ADFRE']])
+
+
+---
+
+5. Dynamic APR-Balance Sensitivity Index (DABSI)
+
+Logic: Measures how sensitive an account's balance is to APR changes, highlighting potential misalignments in rate strategies.
+
+Formula:
+
+DABSI = \frac{\Delta(\text{amort\_balcon\_fee\_amt})}{\Delta(\text{interest})}
+
+data['DABSI'] = data['amort_balcon_fee_amt'].diff() / data['interest'].diff()
+
+# Explanation:
+# - Flags cases where balances show unexpected behavior in response to APR changes.
+# - Useful for detecting non-linear or irrational APR-to-balance relationships.
+print(data[['amort_balcon_fee_amt', 'interest', 'DABSI']])
+
+
+---
+
+6. Hidden APR Utilization Velocity (HAUV)
+
+Logic: Evaluates the speed at which customers adjust their utilization patterns in response to APR changes.
+
+Formula:
+
+HAUV = \frac{\Delta(\text{util\_ncc\_brt\_cl})}{\Delta(\text{lst\_pymt\_dte})}
+
+data['days_diff'] = data['lst_pymt_dte'].apply(lambda x: (pd.Timestamp.now() - pd.to_datetime(x)).days).diff()
+data['HAUV'] = data['util_ncc_brt_cl'].diff() / data['days_diff']
+
+# Explanation:
+# - Identifies hidden customer behaviors tied to APR adjustments.
+# - Flags irregular utilization velocities as anomalies.
+print(data[['util_ncc_brt_cl', 'lst_pymt_dte', 'days_diff', 'HAUV']])
+
+
+---
+
+7. Tiered APR Misalignment Index (TAMI)
+
+Logic: Detects misalignments between APR and customer product tiers, revealing systemic errors in rate assignment.
+
+Formula:
+
+TAMI = \left| \text{interest} - f(\text{card\_prod\_tier\_cd}) \right|
+
+# Assume a tier-based APR mapping
+tier_apr_map = {1: 15, 2: 18, 3: 21, 4: 25}  # Hypothetical APRs for tiers
+data['expected_apr'] = data['card_prod_tier_cd'].map(tier_apr_map)
+data['TAMI'] = abs(data['interest'] - data['expected_apr'])
+
+# Explanation:
+# - Highlights systemic misassignments of APRs based on product tiers.
+# - Critical for ensuring fairness and regulatory compliance.
+print(data[['card_prod_tier_cd', 'interest', 'expected_apr', 'TAMI']])
+
+
+---
+
+8. APR Shock Transition Probability (ASTP)
+
+Logic: Quantifies the probability of sudden APR changes given prior APR transitions, using Markov Chain modeling.
+
+Formula:
+
+ASTP = P(\text{APR}_t | \text{APR}_{t-1})
+
+from sklearn.preprocessing import KBinsDiscretizer
+
+# Discretize APR into states
+discretizer = KBinsDiscretizer(n_bins=5, encode='ordinal', strategy='uniform')
+data['apr_state'] = discretizer.fit_transform(data[['interest']])
+
+# Calculate transition probabilities
+transition_matrix = pd.crosstab(data['apr_state'].shift(1), data['apr_state'], normalize='index')
+
+# Explanation:
+# - Detects systemic patterns in APR shocks.
+# - Flags anomalies in rate-setting practices.
+print(transition_matrix)
+
+
+---
+
+9. Relative APR Outlier Score (RAOS)
+
+Logic: Flags accounts where APR significantly deviates from the distribution of similar accounts (e.g., by tier, region).
+
+Formula:
+
+RAOS = \frac{\text{interest} - \mu_{\text{interest}}}{\sigma_{\text{interest}}}
+
+group_stats = data.groupby('card_prod_tier_cd')['interest'].agg(['mean', 'std']).reset_index()
+data = data.merge(group_stats, on='card_prod_tier_cd', how='left')
+data['RAOS'] = (data['interest'] - data['mean']) / data['std']
+
+# Explanation:
+# - Quantifies APR anomalies relative to peer groups.
+# - Useful for identifying localized compliance issues.
+print(data[['card_prod_tier_cd', 'interest', 'mean', 'std', 'RAOS']])
+
+
+---
+
+10. APR-Fee Conflict Index (AFCI)
+
+Logic: Highlights conflicts where APR changes do not correspond to expected fee reductions, exposing misaligned incentives.
+
+Formula:
+
+AFCI = \frac{\Delta(\text{total\_all\_fee\_amt})}{\Delta(\text{interest})}
+
+data['AFCI'] = data['total_all_fee_amt'].diff() / data['interest'].diff()
+
+# Explanation:
+# - Flags cases where APR changes are inconsistent with fee behavior.
+# - Detects systemic misalignment of APR and fee policies.
+print(data[['total_all_fee_amt', 'interest', 'AFCI']])
+
+
+---
+
+Conclusion
+
+These highly advanced features are designed to:
+
+1. Extract hidden, non-obvious relationships.
+
+
+2. Showcase multi-variable thinking and domain-specific expertise.
+
+
+3. Identify systemic APR irregularities.
+
+
+
+Let me know if you'd like further deep dives or additional features!
+
+
+
+
+
+
+
 # Sample df2 (lookup dataframe for Table1 -> Xyz)
 df2 = h2o.H2OFrame({
     "Table1": ["A", "B"],
