@@ -1,3 +1,18 @@
+# Fee and Charge Analysis Features
+
+# Perform One-Hot Encoding on 'foreign_fee_flag_ind'
+df_encoded = pd.get_dummies(df['foreign_fee_flag_ind'], prefix='foreign_fee_flag_ind', drop_first=False)
+
+# Join the encoded columns back to the original dataframe
+df = pd.concat([df, df_encoded], axis=1)
+
+# Now you can compute FTR using the individual encoded columns
+# For example, if there are columns 'foreign_fee_flag_ind_Yes', 'foreign_fee_flag_ind_No', etc.
+df['FTR'] = df['foreign_fee_flag_ind_Yes'] / df['trans_amt']  # Adjust based on the category of interest
+
+
+
+
 # Behavioral Features
 
 # TFN (Transaction Frequency Normalization): Frequency of transactions per user over the time period.
