@@ -1,3 +1,225 @@
+Here are 10 advanced rule-based features leveraging statistical techniques to effectively detect anomalies in TCPA violations using the provided complaint and journey datasets.
+
+
+---
+
+Rule-Based Features
+
+1. Complaint Volume Spike (Z-Score Based)
+
+Description: Measure the spike in complaints related to TCPA by calculating the z-score of complaints per customer (ccid) over time.
+
+Implementation:
+
+Calculate the mean and standard deviation of complaint volume for each ccid.
+
+Flag anomalies if the z-score exceeds a predefined threshold (e.g., z > 3).
+
+
+Why it helps: Identifies customers or regions experiencing a sudden surge in complaints, which may indicate non-compliance with TCPA.
+
+
+merged_data['complaint_volume_zscore'] = merged_data.groupby('ccid')['complaint_create_date'].transform(
+    lambda x: (x.value_counts() - x.value_counts().mean()) / x.value_counts().std()
+)
+
+
+---
+
+2. Communication Frequency Deviation (IQR-Based)
+
+Description: Measure how the frequency of communication events for a customer deviates from the interquartile range (IQR).
+
+Implementation:
+
+Calculate the IQR for visit_count across all ccid.
+
+Flag customers with communication events outside the range [Q1 - 1.5 * IQR, Q3 + 1.5 * IQR].
+
+
+Why it helps: Helps detect customers being contacted excessively or unusually infrequently.
+
+
+Q1 = merged_data['visit_count'].quantile(0.25)
+Q3 = merged_data['visit_count'].quantile(0.75)
+IQR = Q3 - Q1
+merged_data['communication_outlier'] = (
+    (merged_data['visit_count'] < Q1 - 1.5 * IQR) | (merged_data['visit_count'] > Q3 + 1.5 * IQR)
+).astype(int)
+
+
+---
+
+3. Response Time Anomalies (Standard Deviation Threshold)
+
+Description: Measure anomalies in response times for TCPA-related complaints (ack_received_date to closed_date) by identifying values exceeding mean + 3*std.
+
+Why it helps: Identifies delays in handling complaints, which could point to process breakdowns.
+
+
+merged_data['response_time'] = (merged_data['closed_date'] - merged_data['ack_received_date']).dt.days
+mean_response = merged_data['response_time'].mean()
+std_response = merged_data['response_time'].std()
+merged_data['response_time_anomaly'] = (merged_data['response_time'] > mean_response + 3 * std_response).astype(int)
+
+
+---
+
+4. Complaint Category Entropy Deviation
+
+Description: Measure the deviation in entropy of regulatory_classification_1 (complaint categories) for each ccid. High entropy may indicate broader, unusual patterns of non-compliance.
+
+Why it helps: Captures inconsistencies or broad complaint topics tied to violations.
+
+
+from scipy.stats import entropy
+
+def calculate_category_entropy(group):
+    counts = group.value_counts()
+    return entropy(counts)
+
+merged_data['category_entropy'] = merged_data.groupby('ccid')['regulatory_classification_1'].transform(calculate_category_entropy)
+merged_data['category_entropy_anomaly'] = (merged_data['category_entropy'] > merged_data['category_entropy'].mean() + 2 * merged_data['category_entropy'].std()).astype(int)
+
+
+---
+
+5. Sequential Communication Anomalies (Run Length Encoding)
+
+Description: Identify unusual sequences of repeated communication events (event_nm) using run-length encoding. Long consecutive sequences are flagged.
+
+Why it helps: Helps detect customers repeatedly targeted, violating TCPA guidelines.
+
+
+def rle(sequence):
+    lengths = [len(list(g)) for _, g in groupby(sequence)]
+    return max(lengths)
+
+merged_data['max_event_sequence'] = merged_data.groupby('ccid')['event_nm'].transform(rle)
+threshold = merged_data['max_event_sequence'].quantile(0.95)
+merged_data['event_sequence_anomaly'] = (merged_data['max_event_sequence'] > threshold).astype(int)
+
+
+---
+
+6. Sentiment Polarity Deviation in Complaint Text
+
+Description: Calculate sentiment polarity scores for complaint_description and flag anomalies based on IQR.
+
+Why it helps: Negative sentiments may correlate with TCPA violations. Sudden shifts in sentiment highlight issues.
+
+
+from textblob import TextBlob
+
+merged_data['sentiment_polarity'] = merged_data['complaint_description'].apply(lambda x: TextBlob(str(x)).sentiment.polarity)
+Q1 = merged_data['sentiment_polarity'].quantile(0.25)
+Q3 = merged_data['sentiment_polarity'].quantile(0.75)
+IQR = Q3 - Q1
+merged_data['sentiment_anomaly'] = ((merged_data['sentiment_polarity'] < Q1 - 1.5 * IQR) | (merged_data['sentiment_polarity'] > Q3 + 1.5 * IQR)).astype(int)
+
+
+---
+
+7. Inconsistent Complaint Acknowledgment Patterns
+
+Description: Calculate the variance in acknowledgment times (complaint_create_date to ack_received_date) for each agent and flag outliers.
+
+Why it helps: Indicates discrepancies in how complaints are initially handled.
+
+
+merged_data['ack_time'] = (merged_data['ack_received_date'] - merged_data['complaint_create_date']).dt.days
+ack_time_mean = merged_data['ack_time'].mean()
+ack_time_std = merged_data['ack_time'].std()
+merged_data['ack_time_anomaly'] = (merged_data['ack_time'] > ack_time_mean + 2 * ack_time_std).astype(int)
+
+
+---
+
+8. Temporal Distribution Anomalies
+
+Description: Analyze the time-of-day or day-of-week distribution of communication events for anomalies (e.g., spikes outside business hours).
+
+Why it helps: Detects unusual communication patterns.
+
+
+merged_data['event_hour'] = pd.to_datetime(merged_data['complaint_create_date']).dt.hour
+hour_mean = merged_data['event_hour'].mean()
+hour_std = merged_data['event_hour'].std()
+merged_data['temporal_anomaly'] = (merged_data['event_hour'] < hour_mean - 3 * hour_std) | (merged_data['event_hour'] > hour_mean + 3 * hour_std)
+
+
+---
+
+9. Complaint Type-Event Mismatch Rate
+
+Description: Calculate the mismatch rate between the type of complaint (regulatory_classification_1) and the corresponding journey event type (event_nm). High mismatch rates may signal issues.
+
+Why it helps: Highlights inconsistencies in how TCPA-related complaints are handled.
+
+
+merged_data['mismatch_rate'] = merged_data.apply(lambda x: 1 if x['regulatory_classification_1'] not in x['event_nm'] else 0, axis=1)
+mismatch_mean = merged_data['mismatch_rate'].mean()
+merged_data['mismatch_anomaly'] = (merged_data['mismatch_rate'] > mismatch_mean + 2 * merged_data['mismatch_rate'].std()).astype(int)
+
+
+---
+
+10. High-Cost Journey Event Flagging
+
+Description: Calculate the average cost of a journey event based on visit_count and flag anomalies where specific events exceed the 95th percentile.
+
+Why it helps: Indicates potential spam-related events with high associated costs.
+
+
+event_cost = merged_data.groupby('event_nm')['visit_count'].mean()
+merged_data['high_cost_event'] = merged_data['event_nm'].map(event_cost)
+cost_threshold = merged_data['high_cost_event'].quantile(0.95)
+merged_data['high_cost_anomaly'] = (merged_data['high_cost_event'] > cost_threshold).astype(int)
+
+
+---
+
+Explanation of Features
+
+Each feature incorporates statistical techniques (e.g., z-score, IQR, entropy, run-length encoding) to systematically identify deviations in patterns. These features:
+
+1. Capture frequency-based anomalies (e.g., spikes in communication volume).
+
+
+2. Identify temporal inconsistencies (e.g., acknowledgment delays).
+
+
+3. Highlight behavioral deviations (e.g., repeated targeting, sentiment shifts).
+
+
+
+These features ensure robust anomaly detection by leveraging diverse statistical perspectives. Let me know if you need further elaboration or specific enhancements!
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 import pandas as pd
 import numpy as np
 from sklearn.ensemble import IsolationForest
