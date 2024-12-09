@@ -1,0 +1,167 @@
+Here’s a new set of unique and creative features for identifying Reg Z anomalies from different angles. These features aim to uncover complex and hidden patterns by leveraging advanced calculations and unique combinations of variables.
+
+
+---
+
+New Features and Their Explanations
+
+1. Interest Elasticity Index (IEI)
+
+Formula:
+
+
+Explanation:
+This measures how sensitive the APR (interest rate) is to changes in credit usage. Anomalies occur if APR changes disproportionately to the utilized credit, indicating potential regulatory breaches in rate adjustments.
+
+
+2. Fee-to-Limit Ratio (FTLR)
+
+Formula:
+
+
+Explanation:
+A high FTLR indicates an excessive burden of fees relative to the credit limit. Unusually high values might indicate hidden APR increases or unfair fee structures that violate Reg Z.
+
+
+3. Interest-to-Behavior Score Deviation (IBSD)
+
+Formula:
+
+
+Explanation:
+Tracks how the relationship between APR and behavior score evolves. Significant deviations can signal anomalies, as behavior scores should influence APR consistently.
+
+
+4. Adjusted Payment-to-Balance Ratio (APBR)
+
+Formula:
+
+
+Explanation:
+Reflects how much of the purchase balance is being paid off versus fees. Sudden declines may indicate customers trapped in a fee-heavy structure, violating transparency obligations.
+
+
+5. Time-Weighted APR Movement (TWAM)
+
+Formula:
+
+
+Explanation:
+Measures APR changes over time. Anomalies occur if the APR increases too quickly, especially within short timeframes, suggesting a potential breach of re-evaluation timelines under Reg Z.
+
+
+6. Fee Spike Indicator (FSI)
+
+Formula:
+
+
+Explanation:
+Tracks sudden spikes in fees relative to the previous cycle. Sudden increases without a corresponding rise in balances might indicate hidden APR changes.
+
+
+7. Credit Risk Spread (CRS)
+
+Formula:
+
+(APR Median = Median APR across similar customer profiles)
+
+Explanation:
+Identifies whether a customer’s APR deviates significantly from peers. Outliers suggest inconsistencies in APR application.
+
+
+8. APR Non-Responsiveness (ANR)
+
+Formula:
+
+
+Explanation:
+Measures whether APR changes align with credit usage changes. Lack of alignment may indicate a failure to re-evaluate rates per regulatory requirements.
+
+
+9. Points Redemption Efficiency (PRE)
+
+Formula:
+
+
+Explanation:
+Tracks whether points redemption aligns with earning. Disparities could reveal hidden penalizations or reward reductions tied to APR changes.
+
+
+10. Regulatory Impact Factor (RIF)
+
+Formula:
+
+
+Explanation:
+Reflects the total cost of borrowing. Unusually high values can suggest excessive fees and interest beyond acceptable limits.
+
+
+
+---
+
+Python Code for New Features
+
+# Creating new features
+merged_df['IEI'] = (merged_df['current_interest'] - merged_df['previous_interest']) / merged_df['util_ncc_brt_cl']
+
+merged_df['FTLR'] = (merged_df['total_all_fee_amt'] + merged_df['late_fees']) / merged_df['ca_credi_limit']
+
+merged_df['IBSD'] = (
+    (merged_df['current_interest'] / merged_df['current_bk3_score_val']) -
+    (merged_df['previous_interest'] / merged_df['previous_bk3_score_val'])
+)
+
+merged_df['APBR'] = merged_df['purch_pay_amt'] / (
+    merged_df['current_pure_purch_trans_bal_amt'] + merged_df['total_all_fee_amt']
+)
+
+merged_df['TWAM'] = (
+    merged_df['current_interest'] - merged_df['previous_interest']
+) / merged_df['days_since_last_payment']
+
+merged_df['FSI'] = (
+    (merged_df['late_fees'] + merged_df['amort_balcon_fee_amt']) /
+    (merged_df['total_all_fee_amt'] + 1e-9)
+)
+
+# Assume APR Median is calculated across customer profiles
+apr_median = merged_df['current_interest'].median()
+merged_df['CRS'] = merged_df['current_interest'] - apr_median
+
+merged_df['ANR'] = 1 - (
+    (merged_df['current_interest'] - merged_df['previous_interest']) /
+    (merged_df['current_pure_purch_trans_bal_amt'] - merged_df['previous_pure_purch_trans_bal_amt'] + 1e-9)
+)
+
+merged_df['PRE'] = merged_df['tot_pts_amount'] / (merged_df['previous_tot_pts_amount'] + 1e-9)
+
+merged_df['RIF'] = (
+    (merged_df['total_all_fee_amt'] + merged_df['net_interest_amt']) /
+    merged_df['util_ncc_brt_cl']
+)
+
+# Display the final dataset with new features
+print(merged_df[['IEI', 'FTLR', 'IBSD', 'APBR', 'TWAM', 'FSI', 'CRS', 'ANR', 'PRE', 'RIF']].head())
+
+# Export to CSV if required
+merged_df.to_csv("final_dataset_with_new_features.csv", index=False)
+
+
+---
+
+Benefits of These Features
+
+1. Holistic Analysis: Each feature combines multiple data points, providing unique perspectives on anomalies.
+
+
+2. Regulatory Insights: Features like FTLR, TWAM, and CRS directly correlate with potential violations of APR regulations.
+
+
+3. Advanced Relationships: Complex relationships between fees, interest rates, and behavior scores are captured using IBSD, APBR, and ANR.
+
+
+4. Customer Profiling: Features like CRS enable benchmarking against peers, essential for detecting outliers.
+
+
+
+These features offer advanced, multi-faceted insights that are likely to impress judges in your anomaly detection hackathon. Let me know if you need further refinements or additional angles!
