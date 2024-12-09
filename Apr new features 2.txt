@@ -1,3 +1,334 @@
+Here is the complete Python code to implement all 20 features from the merged dataset (profitability, transaction, billing):
+
+import numpy as np
+import pandas as pd
+
+# Assuming merged dataset as `df`
+
+# Feature 1: APR Efficiency Ratio (APR_ER)
+df['APR_ER'] = df['pure_purch_trans_bal_amt'] * df['bk3_score_val'] / (df['interest'] + 1e-9)
+
+# Feature 2: Purchase Balance Volatility (PBV)
+df['PBV'] = df['pure_purch_trans_bal_amt'].rolling(window=3, min_periods=1).std()
+
+# Feature 3: Normalized Utilization (NU)
+df['NU'] = df['util_ncc_brt_cl'] / (df['bk3_score_val'] + 1e-9)
+
+# Feature 4: Point Efficiency Ratio (PER)
+df['PER'] = df['tot_pts_amount'] / (df['pure_purch_trans_bal_amt'] + 1e-9)
+
+# Feature 5: Anomalous Interest Detection (AID)
+df['AID'] = (df['interest'] - df['interest'].mean()) / df['interest'].std()
+
+# Feature 6: Foreign Transaction Risk Index (FTRI)
+df['FTRI'] = df['foreign_amt'] * df['frgn_cnvrtn_rt'] / (df['stlmt_rt'] + 1e-9)
+
+# Feature 7: Dynamic Fee Consistency (DFC)
+df['DFC'] = df['sys_post_pee_num'] / (df['fee_int_adj_cd'] + 1e-9)
+
+# Feature 8: Transaction Cluster Stability (TCS)
+from sklearn.cluster import KMeans
+kmeans = KMeans(n_clusters=3, random_state=42)
+df['TCS_cluster'] = kmeans.fit_predict(df[['trans_amt', 'stlmt_rt']])
+df['TCS'] = df['TCS_cluster'].diff().fillna(0)
+
+# Feature 9: Refund Anomaly Detection (RAD)
+df['RAD'] = df['refunds_fin_sub_cd'] / (df['trans_amt'] + 1e-9)
+
+# Feature 10: Point-of-Sale Risk Factor (POS_RF)
+df['POS_RF'] = df['zip_cd'] * df['pos_entry_mode'] / (df['trans_amt'] + 1e-9)
+
+# Feature 11: Payment-to-Credit Utilization (PCU)
+df['PCU'] = df['totl_pay_amt'] / (df['dynmc_credit_limit'] + 1e-9)
+
+# Feature 12: APR Stability Index (APR_SI)
+df['APR_SI'] = df['ca_apr'] / (df['fix_pay_apr'] + 1e-9)
+
+# Feature 13: Credit Limit Utilization Shift (CLUS)
+df['CLUS'] = (df['dynmc_credit_limit'] - df['high_bill_bal_amt']) / (df['dynmc_ca_limit'] + 1e-9)
+
+# Feature 14: YTD Payment Ratio (YTD_PR)
+df['YTD_PR'] = df['ytd_pay_amt'] / (df['totl_sales_amt'] + 1e-9)
+
+# Feature 15: Delinquency Score (DS)
+df['DS'] = df['open_bal_amt'] / (df['min_pymt_payoff_tot_amt'] + 1e-9)
+
+# Feature 16: APR Spread Index (APRSI)
+df['APRSI'] = (df['purch_apr_lowest_rt'] - df['cash_goto_apr_rt']) / (df['unit_rate'] + 1e-9)
+
+# Feature 17: Revenue-to-APR Impact (RTAI)
+df['RTAI'] = (df['pure_purch_trans_bal_amt'] * df['bk3_score_val']) / (df['ca_apr'] + 1e-9)
+
+# Feature 18: Fee Impact Ratio (FIR)
+df['FIR'] = df['amort_balcon_fee_amt'] / (df['ytd_fees_amt'] + 1e-9)
+
+# Feature 19: Foreign APR Impact (FAI)
+df['FAI'] = (df['foreign_amt'] * df['ca_apr']) / (df['bk3_score_val'] + 1e-9)
+
+# Feature 20: Billing Compliance Index (BCI)
+df['BCI'] = (df['ytd_fees_amt'] - df['fix_pay_apr']) / (df['high_pay_amt'] + 1e-9)
+
+# Export the dataset with all features
+df.to_csv("final_dataset_with_20_features.csv", index=False)
+
+# Display sample of the dataset for verification
+print(df.head())
+
+Key Notes:
+
+1. Handling Missing or Zero Values:
+
+Division by zero is avoided using 1e-9 in the denominators.
+
+fillna() is used for rolling window operations where applicable.
+
+
+
+2. Advanced Features:
+
+Feature 8 (TCS): Uses clustering (KMeans) to segment transaction patterns, capturing shifts in spending behavior.
+
+Feature 5 (AID) and Feature 8 (TCS): Use statistical and machine-learning methods to highlight outliers or irregularities.
+
+
+
+3. Export and Verification:
+
+Saves the final dataset with all 20 features to final_dataset_with_20_features.csv.
+
+Prints a sample of the dataset to validate feature creation.
+
+
+
+
+This code provides a complete implementation of all 20 features and aligns with the complexity and insights expected for an advanced APR-related use case under Reg Z compliance.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Below is an approach for designing 20 advanced and insightful features based on the given datasets (profitability, transaction, and billing). Each feature is tailored to uncover hidden patterns, highlight anomalies, or provide actionable insights specifically for Reg Z compliance (related to disclosures, APR calculations, and anomalies in fees/transactions).
+
+
+---
+
+Feature Design and Rationale
+
+Profitability Dataset Features
+
+1. APR Efficiency Ratio (APR_ER)
+Formula: 
+Purpose: Captures the efficiency of purchases against the APR and creditworthiness. Higher anomalies indicate potential compliance issues.
+
+
+2. Purchase Balance Volatility (PBV)
+Formula: Rolling Standard Deviation of pure_purch_trans_bal_amt (time-based grouping simulated by transaction data).
+Purpose: Sudden spikes or unusual stability in balances may indicate irregularities or user behavior anomalies.
+
+
+3. Normalized Utilization (NU)
+Formula: 
+Purpose: Relates utilization to creditworthiness. Useful to identify disproportionate credit utilization against risk scores.
+
+
+4. Point Efficiency Ratio (PER)
+Formula: 
+Purpose: Detects if points earned are consistent with purchases, revealing anomalies in promotional activity or misaligned rewards.
+
+
+5. Anomalous Interest Detection (AID)
+Formula: Outlier detection on interest using Z-scores.
+Purpose: Identifies accounts with unusually high or low APR, critical for ensuring Reg Z compliance.
+
+
+
+
+---
+
+Transaction Dataset Features
+
+6. Foreign Transaction Risk Index (FTRI)
+Formula: 
+Purpose: Highlights inconsistencies in foreign transactions. Outliers might indicate fraud or incorrect APR application.
+
+
+7. Dynamic Fee Consistency (DFC)
+Formula: 
+Purpose: Tracks systemic consistency in fees and interest adjustments. Outliers could reveal billing irregularities.
+
+
+8. Transaction Cluster Stability (TCS)
+Formula: Apply k-means clustering on trans_amt and stlmt_rt; analyze cluster transition probabilities.
+Purpose: Monitors transaction patterns; sudden transitions between clusters can indicate irregular spending.
+
+
+9. Refund Anomaly Detection (RAD)
+Formula: 
+Purpose: Checks if refund values align with transaction amounts. Anomalies suggest potential chargebacks or disputes.
+
+
+10. Point-of-Sale Risk Factor (POS_RF)
+Formula: 
+Purpose: Detects anomalies in location and mode of transaction, identifying possible skimming or fraud.
+
+
+
+
+---
+
+Billing Dataset Features
+
+11. Payment-to-Credit Utilization (PCU)
+Formula: 
+Purpose: Tracks if payments are proportional to credit usage. Irregularities could indicate payment anomalies.
+
+
+12. APR Stability Index (APR_SI)
+Formula: 
+Purpose: Analyzes how stable APR values are across billing periods, critical for Reg Z compliance.
+
+
+13. Credit Limit Utilization Shift (CLUS)
+Formula: 
+Purpose: Detects shifts in credit limits, helping identify risky account adjustments.
+
+
+14. YTD Payment Ratio (YTD_PR)
+Formula: 
+Purpose: Compares year-to-date payments with total sales. Large deviations may indicate compliance issues.
+
+
+15. Delinquency Score (DS)
+Formula: 
+Purpose: Tracks delinquency risk by comparing balances to minimum payments.
+
+
+16. APR Spread Index (APRSI)
+Formula: 
+Purpose: Analyzes disparities between purchase APR and cash APR, critical for pricing transparency.
+
+
+
+
+---
+
+Cross-Dataset Features
+
+17. Revenue-to-APR Impact (RTAI)
+Formula: 
+Purpose: Relates profitability metrics to APR, helping identify accounts where APR is disproportionately high.
+
+
+18. Fee Impact Ratio (FIR)
+Formula: 
+Purpose: Tracks fees' contribution to total charges, highlighting excessive or hidden fees.
+
+
+19. Foreign APR Impact (FAI)
+Formula: 
+Purpose: Assesses if foreign transactions align with APR, identifying potential billing errors or compliance risks.
+
+
+20. Billing Compliance Index (BCI)
+Formula: 
+Purpose: Comprehensive metric to capture irregularities in fees, APR, and payments, directly linked to Reg Z compliance.
+
+
+
+
+---
+
+Python Implementation
+
+# Assuming merged dataframes: profitability, transaction, billing merged into `df`
+
+# Feature 1: APR Efficiency Ratio
+df['APR_ER'] = df['pure_purch_trans_bal_amt'] * df['bk3_score_val'] / df['interest']
+
+# Feature 2: Purchase Balance Volatility
+df['PBV'] = df['pure_purch_trans_bal_amt'].rolling(window=3).std()
+
+# Feature 3: Normalized Utilization
+df['NU'] = df['util_ncc_brt_cl'] / df['bk3_score_val']
+
+# Feature 4: Point Efficiency Ratio
+df['PER'] = df['tot_pts_amount'] / (df['pure_purch_trans_bal_amt'] + 1e-9)
+
+# Feature 5: Anomalous Interest Detection
+df['AID'] = (df['interest'] - df['interest'].mean()) / df['interest'].std()
+
+# Feature 6: Foreign Transaction Risk Index
+df['FTRI'] = df['foreign_amt'] * df['frgn_cnvrtn_rt'] / df['stlmt_rt']
+
+# Feature 7: Dynamic Fee Consistency
+df['DFC'] = df['sys_post_pee_num'] / (df['fee_int_adj_cd'] + 1e-9)
+
+# Feature 8: Transaction Cluster Stability (use clustering externally)
+
+# Feature 9: Refund Anomaly Detection
+df['RAD'] = df['refunds_fin_sub_cd'] / (df['trans_amt'] + 1e-9)
+
+# Feature 10: Point-of-Sale Risk Factor
+df['POS_RF'] = df['zip_cd'] * df['pos_entry_mode'] / (df['trans_amt'] + 1e-9)
+
+# Continue similarly for Features 11–20
+
+# Export for review
+df.to_csv("final_dataset_with_advanced_features.csv", index=False)
+
+Key Notes
+
+Complexity: Many features use advanced statistical methods (rolling windows, clustering).
+
+Actionable: Features directly address anomalies, APR trends, and potential compliance issues.
+
+Uniqueness: Includes innovative combinations of attributes not obvious to SMEs.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 Here’s a new set of unique and creative features for identifying Reg Z anomalies from different angles. These features aim to uncover complex and hidden patterns by leveraging advanced calculations and unique combinations of variables.
 
 
