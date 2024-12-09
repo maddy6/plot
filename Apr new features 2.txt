@@ -128,6 +128,55 @@ This code provides a complete implementation of all 20 features and aligns with 
 
 
 
+\text{BCI} = \frac{\text{ytd_fees_amt} - \text{fix_pay_apr}}{\text{high_pay_amt}} ]
+
+Why it’s important:
+Evaluates consistency between fees, APR, and high payments. Reg Z requires transparent and fair billing disclosures; any inconsistency could result in customer overcharging or non-compliance.
+
+Anomaly:
+Large deviations in BCI could indicate misalignment in fee application or incorrect APR disclosures.
+
+
+---
+
+Summary of Anomaly Detection and Reg Z Implications
+
+Each feature contributes to anomaly detection by addressing key areas of compliance under Reg Z:
+
+1. Fairness: Features like APR Efficiency Ratio (APR_ER) and APR Spread Index (APRSI) detect unfair pricing or APR inconsistencies.
+
+
+2. Transparency: Features like YTD Payment Ratio (YTD_PR), Billing Compliance Index (BCI), and Fee Impact Ratio (FIR) ensure proper fee and payment disclosures.
+
+
+3. Accuracy: Features such as Anomalous Interest Detection (AID) and Refund Anomaly Detection (RAD) capture calculation errors that could mislead consumers.
+
+
+4. Risk Management: Features like Foreign Transaction Risk Index (FTRI) and Delinquency Score (DS) highlight potential risk areas in APR determination and compliance.
+
+
+
+These features provide a comprehensive, nuanced approach to detecting APR-related issues, going beyond surface-level insights to uncover hidden irregularities and potential compliance risks. This detailed analysis ensures robust monitoring and adherence to Reg Z regulations.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
