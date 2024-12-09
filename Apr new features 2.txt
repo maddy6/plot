@@ -1,3 +1,590 @@
+Here is the Python code to calculate the 50 advanced features for detecting anomalies related to RegZ compliance. I've broken them down into the five perspectives we discussed earlier. The code assumes that you have a Pandas DataFrame named df containing the transaction data with relevant columns.
+
+1. Behavioral Features
+
+import pandas as pd
+import numpy as np
+
+# 1. Spending Stability Index (SSI)
+df['SSI'] = df.groupby('Temp_key')['trans_amt'].transform(lambda x: np.std(x))
+
+# 2. Recurring Transaction Consistency (RTC)
+df['RTC'] = df.groupby('Temp_key')['sale_dt'].transform(lambda x: x.diff().mode()[0])
+
+# 3. High-value Transaction Deviation (HTD)
+df['HTD'] = df['trans_amt'] - df.groupby('Temp_key')['trans_amt'].transform('mean')
+
+# 4. Cash Advance Dependency (CAD)
+df['CAD'] = df.groupby('Temp_key')['trans_amt'].transform(lambda x: (x > 500).sum() / len(x))
+
+# 5. Foreign Transaction Pattern Consistency (FTPC)
+df['FTPC'] = df.groupby('Temp_key')['foreign_amt'].transform(lambda x: np.std(x))
+
+# 6. Balance Utilization Volatility (BUV)
+df['BUV'] = df['trans_amt'] / df['dynmc_credit_limit'] - df.groupby('Temp_key')['trans_amt'].transform(lambda x: x.mean()) 
+
+# 7. Category Spend Anomaly (CSA)
+df['CSA'] = df.groupby('Temp_key')['merch_id'].transform(lambda x: x.value_counts().idxmax())
+
+# 8. Overutilization Risk Index (ORI)
+df['ORI'] = df['trans_amt'] / df['dynmc_credit_limit']
+
+# 9. Payment-to-Spend Discrepancy (PSD)
+df['PSD'] = df.groupby('Temp_key')['totl_pay_amt'].transform('sum') - df.groupby('Temp_key')['totl_sales_amt'].transform('sum')
+
+# 10. Dormancy Spike (DS)
+df['DS'] = df.groupby('Temp_key')['sale_dt'].transform(lambda x: (x.diff() > pd.Timedelta('180 days')).sum())
+
+2. Volume and Velocity Features
+
+# 1. Hourly Transaction Volume Spike (HTVS)
+df['HTVS'] = df.groupby([df['sale_dt'].dt.hour, 'Temp_key'])['trans_amt'].transform('count')
+
+# 2. Per-Cycle Spend Acceleration (PCSA)
+df['PCSA'] = df.groupby('Temp_key')['trans_amt'].transform(lambda x: x.pct_change().mean())
+
+# 3. Clustered Transaction Timing (CTT)
+df['CTT'] = df.groupby('Temp_key')['sale_dt'].transform(lambda x: x.diff().min())
+
+# 4. Velocity Index (VI)
+df['VI'] = df.groupby('Temp_key')['sale_dt'].transform(lambda x: len(x) / (x.max() - x.min()).days)
+
+# 5. Average Transaction Size Shift (ATSS)
+df['ATSS'] = df.groupby('Temp_key')['trans_amt'].transform('mean') - df['trans_amt'].mean()
+
+# 6. Merchant Concentration Ratio (MCR)
+df['MCR'] = df.groupby('Temp_key')['merch_id'].transform(lambda x: len(x.unique()) / len(x))
+
+# 7. Burst Spending Pattern (BSP)
+df['BSP'] = df.groupby('Temp_key')['trans_amt'].transform(lambda x: (x > x.mean() + 3 * x.std()).sum())
+
+# 8. Limit Breach Detection (LBD)
+df['LBD'] = df['trans_amt'] / df['dynmc_credit_limit']
+
+# 9. Spend Divergence Index (SDI)
+df['SDI'] = df['trans_amt'] - df.groupby('Temp_key')['trans_amt'].transform('mean')
+
+# 10. Cumulative Fee-to-Spend Ratio (CFSR)
+df['CFSR'] = df.groupby('Temp_key')['totl_sales_amt'].transform('sum') / df.groupby('Temp_key')['ytd_fees_amt'].transform('sum')
+
+3. Fee and Charge Dynamics Features
+
+# 1. Fee-to-Limit Ratio (FLR)
+df['FLR'] = df.groupby('Temp_key')['ytd_fees_amt'].transform('sum') / df['dynmc_credit_limit']
+
+# 2. Fee Spike Detector (FSD)
+df['FSD'] = df.groupby('Temp_key')['ytd_fees_amt'].transform(lambda x: np.diff(x).max())
+
+# 3. Fee Type Concentration Index (FTCI)
+df['FTCI'] = df.groupby('Temp_key')['fee_int_adj_cd'].transform(lambda x: x.value_counts().idxmax())
+
+# 4. APR Adjustment Lag (AAL)
+df['AAL'] = df.groupby('Temp_key')['sale_dt'].transform(lambda x: (x.diff().min() > pd.Timedelta('30 days')).sum())
+
+# 5. Chargeback Rate (CR)
+df['CR'] = df.groupby('Temp_key')['trans_cd'].transform(lambda x: (x == 'chargeback').sum() / len(x))
+
+# 6. Interest Charge Sensitivity (ICS)
+df['ICS'] = df['trans_amt'] / df.groupby('Temp_key')['trans_amt'].transform('mean')
+
+# 7. Fee Aggregation Index (FAI)
+df['FAI'] = df.groupby('Temp_key')['ytd_fees_amt'].transform('sum')
+
+# 8. Refund-to-Fee Ratio (RFR)
+df['RFR'] = df.groupby('Temp_key')['refunds_fin_sub_cd'].transform('sum') / df.groupby('Temp_key')['ytd_fees_amt'].transform('sum')
+
+# 9. Hidden Fee Detection (HFD)
+df['HFD'] = df.groupby('Temp_key')['fee_int_adj_cd'].transform(lambda x: x.isnull().sum())
+
+# 10. Penalty Fee Spike (PFS)
+df['PFS'] = df.groupby('Temp_key')['fee_int_adj_cd'].transform(lambda x: (x == 'penalty').sum())
+
+4. Geospatial and Merchant Analysis Features
+
+# 1. Merchant Frequency Spike (MFS)
+df['MFS'] = df.groupby('Temp_key')['merch_id'].transform(lambda x: x.value_counts().max())
+
+# 2. ZIP Code Fee Disparity (ZCFD)
+df['ZCFD'] = df.groupby('zip_cd')['ytd_fees_amt'].transform('mean')
+
+# 3. Cross-border Transaction Ratio (CBTR)
+df['CBTR'] = df.groupby('Temp_key')['foreign_amt'].transform('sum') / df.groupby('Temp_key')['trans_amt'].transform('sum')
+
+# 4. Geospatial Spending Pattern (GSP)
+df['GSP'] = df.groupby('zip_cd')['trans_amt'].transform('sum')
+
+# 5. Merchant Refund Ratio (MRR)
+df['MRR'] = df.groupby('Temp_key')['refunds_fin_sub_cd'].transform('sum') / df.groupby('Temp_key')['trans_amt'].transform('sum')
+
+# 6. High-fee Merchant Concentration (HFMC)
+df['HFMC'] = df.groupby('Temp_key')['merch_id'].transform(lambda x: (x == 'high_fee_merch').sum())
+
+# 7. Foreign Fee Spike (FFS)
+df['FFS'] = df.groupby('Temp_key')['foreign_fee_flag_ind'].transform('sum')
+
+# 8. Merchant Spend Shift (MSS)
+df['MSS'] = df.groupby('Temp_key')['trans_amt'].transform('mean') - df.groupby('Temp_key')['trans_amt'].shift(1)
+
+# 9. Regional Fee Index (RFI)
+df['RFI'] = df.groupby('zip_cd')['ytd_fees_amt'].transform('mean')
+
+# 10. Merchant Anomaly Score (MAS)
+df['MAS'] = df.groupby('merch_id')['trans_amt'].transform(lambda x: np.std(x))
+
+5. Temporal Patterns and Relationships Features
+
+# 1. Time-to-Posting Delay (TPD)
+df['TPD'] = (df['sale_dt'] - df['trans_auth_dt']).dt.total_seconds()
+
+# 2. Billing Cycle Spend Anomaly (BCSA)
+df['BCSA'] = df.groupby('bill_mon_num')['trans_amt'].transform(lambda x: x.mean()) - df['trans_amt']
+
+# 3. Weekend Transaction Spike (WTS)
+df['WTS'] = df.groupby([df['sale_dt'].dt.weekday, 'Temp_key'])['trans_amt'].transform('sum')
+
+# 4. Late Fee Timing Index (LFTI)
+df['LFTI'] = (df['sale_dt'] - df['last_pay_dt']).dt.days
+
+# 5. Interest Recalculation Lag (IRL)
+df['IRL'] = (df['sale_dt'] - df['last_purch_dt']).dt.days
+
+# 6. Hourly Fee Spike (HFS)
+df['HFS'] = df.groupby([df['sale_dt'].dt.hour, 'Temp_key'])['ytd_fees_amt'].transform('sum')
+
+# 7. End-of-Month Transaction Surge (EMTS)
+df['EMTS'] = df.groupby([df['sale_dt'].dt.is_month_end, 'Temp_key'])['trans_amt'].transform('sum')
+
+# 8. Fee Posting Delay (FPD)
+df['FPD'] = (df['sale_dt'] - df['bnk_net_mmdd']).dt.days
+
+# 9. Time-of-Day Spend Pattern (TDSP)
+df['TDSP'] = df.groupby([df['sale_dt'].dt.hour, 'Temp_key'])['trans_amt'].transform('sum')
+
+# 10. Historical Trend Deviation (HTD)
+df['HTD'] = df['trans_amt'] - df.groupby('Temp_key')['trans_amt'].transform('mean')
+
+Conclusion
+
+This code provides 50 unique, complex features across five perspectives, aimed at identifying anomalies related to RegZ compliance. These features consider various aspects such as spending behavior, transaction volume, fee structures, geographical analysis, and temporal patterns. By integrating these advanced features, you can better identify and mitigate risks in financial transactions, ensuring compliance with RegZ regulations.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+To systematically create 50 unique, complex, and advanced features for identifying anomalies under RegZ, I have categorized them into five perspectives or aspects: Behavioral, Volume and Velocity, Fee and Charge Dynamics, Geospatial and Merchant Analysis, and Temporal Patterns and Relationships. Each aspect has 10 distinct features designed to highlight hidden relationships and compliance risks.
+
+
+---
+
+1. Behavioral Features
+
+These features capture spending behavior and usage patterns, which can reveal anomalies related to consumer treatment, fee disclosures, and interest calculation.
+
+1. Spending Stability Index (SSI)
+Measures the standard deviation of transaction amounts over billing cycles to detect inconsistent spending patterns.
+
+Why: Erratic behavior might highlight mismanagement in interest or billing disclosures.
+
+
+
+2. Recurring Transaction Consistency (RTC)
+Identifies recurring transaction patterns by analyzing timestamps and amounts.
+
+Why: Inconsistent recurring charges could indicate billing errors or undisclosed fees.
+
+
+
+3. High-value Transaction Deviation (HTD)
+Calculates the deviation of high-value transactions from the account average.
+
+Why: Flags unusually large transactions, which might trigger incorrect fees.
+
+
+
+4. Cash Advance Dependency (CAD)
+Ratio of cash advance transactions to total transactions.
+
+Why: High dependency might lead to undisclosed high fees, violating RegZ.
+
+
+
+5. Foreign Transaction Pattern Consistency (FTPC)
+Tracks foreign transactions' frequency and amounts over time.
+
+Why: Irregularities here may suggest misreported foreign transaction fees.
+
+
+
+6. Balance Utilization Volatility (BUV)
+Measures fluctuations in transaction-to-limit ratios.
+
+Why: Erratic utilization impacts interest calculation and fee disclosures.
+
+
+
+7. Category Spend Anomaly (CSA)
+Compares average spend in different merchant categories (e.g., retail vs. travel).
+
+Why: Anomalies might indicate errors in categorizing transactions.
+
+
+
+8. Overutilization Risk Index (ORI)
+Aggregates accounts where transactions exceed 90% of limits frequently.
+
+Why: Highlights accounts prone to fees, ensuring fair disclosures.
+
+
+
+9. Payment-to-Spend Discrepancy (PSD)
+Compares payment amounts to spending trends over time.
+
+Why: Misalignment could indicate billing or crediting delays.
+
+
+
+10. Dormancy Spike (DS)
+Detects sudden spikes in activity after long dormancy periods.
+
+
+
+Why: Indicates errors in processing or consumer misunderstanding.
+
+
+
+---
+
+2. Volume and Velocity Features
+
+These focus on transaction volume and speed, which could signal processing anomalies, fraud, or interest-related miscalculations.
+
+1. Hourly Transaction Volume Spike (HTVS)
+Compares hourly transaction counts to account averages.
+
+Why: High spikes may indicate system errors or undisclosed practices.
+
+
+
+2. Per-Cycle Spend Acceleration (PCSA)
+Measures the increase in spending over billing cycles.
+
+Why: Highlights periods where fees or interest calculations might go wrong.
+
+
+
+3. Clustered Transaction Timing (CTT)
+Groups transactions by tight timestamps.
+
+Why: Flags anomalies in posting or consumer behavior patterns.
+
+
+
+4. Velocity Index (VI)
+Tracks the number of transactions within short intervals (e.g., 10 minutes).
+
+Why: Identifies unusual activity, potentially violating fair treatment.
+
+
+
+5. Average Transaction Size Shift (ATSS)
+Computes month-on-month changes in average transaction size.
+
+Why: Highlights sudden shifts in consumer behavior or system errors.
+
+
+
+6. Merchant Concentration Ratio (MCR)
+Measures the percentage of transactions concentrated with a single merchant.
+
+Why: Flags potential merchant-specific compliance issues.
+
+
+
+7. Burst Spending Pattern (BSP)
+Identifies clusters of high-value transactions within short windows.
+
+Why: Unusual bursts might violate proper fee disclosures.
+
+
+
+8. Limit Breach Detection (LBD)
+Tracks how often transactions approach or exceed credit limits.
+
+Why: Exposes non-compliance with penalty fee disclosures.
+
+
+
+9. Spend Divergence Index (SDI)
+Compares current month spending to historical averages.
+
+Why: Large deviations may indicate errors or new risks.
+
+
+
+10. Cumulative Fee-to-Spend Ratio (CFSR)
+Aggregates fees relative to total spending over time.
+
+
+
+Why: Captures disproportionate fee structures.
+
+
+
+---
+
+3. Fee and Charge Dynamics Features
+
+These features focus on fee-related calculations to identify hidden or excessive charges, aligning with RegZ’s fee transparency requirements.
+
+1. Fee-to-Limit Ratio (FLR)
+Compares total fees to credit limits.
+
+Why: Ensures fees remain proportional to disclosed limits.
+
+
+
+2. Fee Spike Detector (FSD)
+Flags sudden spikes in fees within billing cycles.
+
+Why: Helps detect hidden or incorrectly applied fees.
+
+
+
+3. Fee Type Concentration Index (FTCI)
+Measures the dominance of one fee type (e.g., late fees).
+
+Why: Excessive reliance on specific fees can be non-compliant.
+
+
+
+4. APR Adjustment Lag (AAL)
+Tracks delays in APR adjustments after payment behavior changes.
+
+Why: Highlights interest recalibration issues.
+
+
+
+5. Chargeback Rate (CR)
+Ratio of chargebacks to total transactions.
+
+Why: High rates might indicate operational errors or fraud.
+
+
+
+6. Interest Charge Sensitivity (ICS)
+Measures the correlation between spending and interest charges.
+
+Why: Identifies mismatched interest calculations.
+
+
+
+7. Fee Aggregation Index (FAI)
+Aggregates all fees to show cumulative impacts.
+
+Why: Ensures cumulative fees align with disclosed terms.
+
+
+
+8. Refund-to-Fee Ratio (RFR)
+Tracks refunds as a percentage of total fees.
+
+Why: Highlights cases of excessive fee correction.
+
+
+
+9. Hidden Fee Detection (HFD)
+Tracks fees not aligned with any standard category.
+
+Why: Flags possible hidden charges.
+
+
+
+10. Penalty Fee Spike (PFS)
+Detects sudden spikes in penalty fees.
+
+
+
+Why: Ensures penalties are proportionate and justified.
+
+
+
+---
+
+4. Geospatial and Merchant Analysis Features
+
+These capture anomalies related to geographic locations and merchant-specific behavior.
+
+1. Merchant Frequency Spike (MFS)
+Flags accounts with unusually high merchant visit counts.
+
+Why: Indicates unusual consumer or merchant behavior.
+
+
+
+2. ZIP Code Fee Disparity (ZCFD)
+Tracks average fees by ZIP code.
+
+Why: Ensures fees are consistently applied.
+
+
+
+3. Cross-border Transaction Ratio (CBTR)
+Measures foreign transactions relative to domestic ones.
+
+Why: Flags overreliance on foreign fees.
+
+
+
+4. Geospatial Spending Pattern (GSP)
+Maps spending behavior by region.
+
+Why: Identifies geographic discrepancies in disclosures.
+
+
+
+5. Merchant Refund Ratio (MRR)
+Tracks refunds by merchant.
+
+Why: Highlights merchant-specific issues.
+
+
+
+6. High-fee Merchant Concentration (HFMC)
+Measures transactions at merchants with high fees.
+
+Why: Exposes risks tied to specific merchants.
+
+
+
+7. Foreign Fee Spike (FFS)
+Flags accounts with sudden increases in foreign fees.
+
+Why: Highlights issues in foreign transaction disclosures.
+
+
+
+8. Merchant Spend Shift (MSS)
+Compares spending by merchant type over time.
+
+Why: Highlights shifts indicating new risks.
+
+
+
+9. Regional Fee Index (RFI)
+Aggregates fees by geographic regions.
+
+Why: Ensures regional fee consistency.
+
+
+
+10. Merchant Anomaly Score (MAS)
+Scores merchants by irregular transaction patterns.
+
+
+
+Why: Flags non-compliant merchant practices.
+
+
+
+---
+
+5. Temporal Patterns and Relationships Features
+
+These focus on time-based trends and dependencies to uncover hidden anomalies.
+
+1. Time-to-Posting Delay (TPD)
+Measures the delay between transaction and posting.
+
+Why: Long delays can violate transparency rules.
+
+
+
+2. Billing Cycle Spend Anomaly (BCSA)
+Tracks spend irregularities within billing cycles.
+
+Why: Highlights misaligned billing or fee calculations.
+
+
+
+3. Weekend Transaction Spike (WTS)
+Flags spikes in weekend transactions.
+
+Why: Ensures no special processing errors occur.
+
+
+
+4. Late Fee Timing Index (LFTI)
+Tracks the timing of late fees after missed payments.
+
+Why: Ensures proper fee application.
+
+
+
+5. Interest Recalculation Lag (IRL)
+Measures time between payment changes and APR recalculations.
+
+Why: Highlights improper interest practices.
+
+
+
+6. Hourly Fee Spike (HFS)
+Detects hourly increases in fees.
+
+Why: Ensures fees are justified.
+
+
+
+7. End-of-Month Transaction Surge (EMTS)
+Tracks transaction volume near month-ends.
+
+Why: Flags timing anomalies affecting billing.
+
+
+
+8. Fee Posting Delay (FPD)
+Measures delays in fee postings.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 Why: Long delays can lead to undisclosed interest accruals.
 
 
