@@ -195,6 +195,199 @@ Would you like Python implementations for these features with EDA and visualizat
 
 
 
+_----------------
+
+
+--_----------------
+
+
+
+Here is the Python implementation of the advanced features based on your dataset. The code includes feature engineering, detailed explanations, and steps to compute each feature. I have used Python libraries like pandas and numpy to process the data.
+
+
+---
+
+1. Interest Rate Spread Deviation (IRSD)
+
+import pandas as pd
+import numpy as np
+
+# Sample DataFrame
+data = pd.DataFrame({
+    'interest': [12.5, 15.0, 10.2, 13.0],
+    'pure_purch_trans_bal_amt': [1000, 800, 1200, 950],
+    'cof': [0.05, 0.045, 0.04, 0.05],
+    'apr_index_id': [13.0, 14.5, 11.0, 12.5]
+})
+
+# IRSD Calculation
+data['IRSD'] = abs(
+    (data['interest'] - (data['pure_purch_trans_bal_amt'] * data['cof']) / data['pure_purch_trans_bal_amt]) - data['apr_index_id']
+)
+
+# Explanation
+# - This measures the deviation between actual interest charged and expected APR based on the cost of funds.
+# - High IRSD indicates potential misalignment with Reg Z requirements.
+print(data[['interest', 'pure_purch_trans_bal_amt', 'cof', 'apr_index_id', 'IRSD']])
+
+
+---
+
+2. Time-Weighted Credit Utilization Anomaly Score (TWCAS)
+
+data['util_ncc_brt_cl'] = [500, 700, 900, 600]  # Credit utilization
+data['total_credi_limit'] = [2000, 2000, 2000, 2000]  # Credit limit
+
+# Time-weighted utilization score
+time_weights = np.arange(1, len(data) + 1) / len(data)
+data['TWCAS'] = (data['util_ncc_brt_cl'] * time_weights).sum() / data['total_credi_limit']
+
+# Explanation
+# - Tracks sustained upward or downward trends in utilization.
+# - Anomaly is flagged when utilization spikes are sustained.
+print(data[['util_ncc_brt_cl', 'total_credi_limit', 'TWCAS']])
+
+
+---
+
+3. Rolling Fee-to-Balance Ratio Deviation (RFBRD)
+
+data['late_fees'] = [30, 25, 40, 20]
+data['ca_fee_amt'] = [10, 15, 20, 15]
+
+# Rolling Fee-to-Balance Ratio (3-month window for illustration)
+rolling_window = 2
+data['RFBRD'] = data[['late_fees', 'ca_fee_amt']].sum(axis=1).rolling(rolling_window).mean() / \
+                data['pure_purch_trans_bal_amt'].rolling(rolling_window).mean()
+
+# Explanation
+# - Captures sudden spikes in fee-to-balance ratios over rolling periods.
+# - Useful to spot anomalies in balance and fee alignment.
+print(data[['late_fees', 'ca_fee_amt', 'pure_purch_trans_bal_amt', 'RFBRD']])
+
+
+---
+
+4. Customer Clustering Drift Index (CCDI)
+
+from sklearn.cluster import KMeans
+from sklearn.preprocessing import StandardScaler
+
+# Features for clustering
+features = data[['bk3_score_val', 'util_ncc_brt_cl', 'total_credi_limit', 'pure_purch_trans_bal_amt']].fillna(0)
+
+# Standardize features
+scaler = StandardScaler()
+features_scaled = scaler.fit_transform(features)
+
+# Clustering
+kmeans = KMeans(n_clusters=2, random_state=42)
+data['Cluster'] = kmeans.fit_predict(features_scaled)
+
+# CCDI Calculation
+# Measure how many customers drift between clusters over time.
+data['CCDI'] = data['Cluster'].diff().fillna(0).abs()
+
+# Explanation
+# - Tracks changes in cluster membership as a proxy for systemic behavior changes.
+print(data[['bk3_score_val', 'util_ncc_brt_cl', 'Cluster', 'CCDI']])
+
+
+---
+
+5. Behavioral Anomaly Index (BAI)
+
+data['bk3_score_val'] = [200, 180, 190, 170]
+data['prior_purch_amt'] = [800, 750, 900, 850]
+data['earn_pts'] = [500, 550, 600, 520]
+
+# BAI Calculation
+data['BAI'] = (data['bk3_score_val'].diff().fillna(0)) / data['prior_purch_amt'] * data['earn_pts']
+
+# Explanation
+# - High BAI indicates inconsistencies between bankruptcy risk and earned points behavior.
+# - Useful for catching misaligned APR decisions.
+print(data[['bk3_score_val', 'prior_purch_amt', 'earn_pts', 'BAI']])
+
+
+---
+
+6. Hidden Fee Anomaly Ratio (HFAR)
+
+data['total_all_fee_amt'] = [70, 90, 100, 80]
+data['annual_purchase_fee_amt'] = [20, 25, 30, 20]
+
+# HFAR Calculation
+data['HFAR'] = (data['total_all_fee_amt'] - (data['late_fees'] + data['ca_fee_amt'] + data['annual_purchase_fee_amt'])) / \
+               data['purch_amt']
+
+# Explanation
+# - Tracks discrepancies in fee calculation.
+# - Hidden anomalies in total fee structure are exposed.
+print(data[['total_all_fee_amt', 'late_fees', 'annual_purchase_fee_amt', 'HFAR']])
+
+
+---
+
+7. Utilization Spike Index (USI)
+
+# USI Calculation
+data['USI'] = data['util_ncc_brt_cl'].pct_change().fillna(0)
+
+# Explanation
+# - Identifies sudden spikes in utilization, which may indicate systemic risk.
+print(data[['util_ncc_brt_cl', 'USI']])
+
+
+---
+
+8. Fee Elasticity Index (FEI)
+
+data['FEI'] = data['total_all_fee_amt'].diff().fillna(0) / data['purch_amt'].diff().fillna(0)
+
+# Explanation
+# - Measures disproportionate fee changes relative to purchasing activity.
+# - A sudden jump in FEI flags anomalies in fee structure.
+print(data[['total_all_fee_amt', 'purch_amt', 'FEI']])
+
+
+---
+
+9. APR Reduction Eligibility Gap (AREG)
+
+# AREG Calculation
+data['AREG'] = data['util_ncc_brt_cl'] * (1 - data['bk3_score_val'] / data['bk3_score_val'].max())
+
+# Explanation
+# - Highlights gaps in APR reduction eligibility.
+# - Flags cases where high-risk accounts are overlooked.
+print(data[['util_ncc_brt_cl', 'bk3_score_val', 'AREG']])
+
+
+---
+
+10. Complaint-Driven Risk Adjustment Index (CDRAI)
+
+data['complaint_count'] = [5, 3, 8, 6]
+
+# CDRAI Calculation
+data['CDRAI'] = data['complaint_count'] / data['util_ncc_brt_cl']
+
+# Explanation
+# - Links complaints to credit usage, exposing systemic issues.
+print(data[['complaint_count', 'util_ncc_brt_cl', 'CDRAI']])
+
+
+---
+
+Conclusion
+
+Insights: These features focus on systemic issues and hidden anomalies, ensuring a detailed understanding of potential APR-related violations.
+
+Scalability: Each feature is flexible for scaling to large datasets and deeper analysis.
+
+
+Would you like visualizations or additional EDA for these features?
 
 
 
