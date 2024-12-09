@@ -1,3 +1,303 @@
+To generate advanced, complex, and robust features based on your transaction dataset, we will leverage the following columns to create 50 features. These features will be geared toward detecting RegZ anomalies, focusing on relationships with APR (Annual Percentage Rate) use cases, spending behavior, payment structures, fee analysis, and merchant characteristics. These features are designed to extract hidden patterns that even SMEs may miss but can be captured through advanced analysis.
+
+Here's a breakdown of 50 complex features based on the provided dataset, organized into five perspectives.
+
+1. Behavioral Features
+
+These features capture customer behavior, identifying outliers, inconsistencies, and unusual patterns in spending and transaction timing that may indicate RegZ violations.
+
+1. Transaction Variability Index (TVI)
+Measures the variation in transaction amounts for a user. High volatility may signal risky financial behavior.
+df['TVI'] = df.groupby('Temp_key')['trans_amt'].transform(lambda x: np.std(x))
+
+
+2. Foreign Transaction Frequency (FTF)
+Ratio of foreign transactions to total transactions, which could suggest unusual financial activity.
+df['FTF'] = df.groupby('Temp_key')['foreign_amt'].transform('sum') / df.groupby('Temp_key')['trans_amt'].transform('sum')
+
+
+3. Foreign Currency Conversion Rate Deviation (FCCR)
+Measures the deviation in foreign exchange rates, detecting inconsistencies in cross-border transactions.
+df['FCCR'] = df.groupby('Temp_key')['frgn_cnvrtn_rt'].transform(lambda x: np.std(x))
+
+
+4. Average Transaction Deviation (ATD)
+Difference between a user’s average transaction amount and each individual transaction, highlighting unusual spending.
+df['ATD'] = df['trans_amt'] - df.groupby('Temp_key')['trans_amt'].transform('mean')
+
+
+5. Merchant Diversity Index (MDI)
+Measures how many different merchants a user interacts with, with higher values indicating potential anomalies.
+df['MDI'] = df.groupby('Temp_key')['merch_num'].transform('nunique')
+
+
+6. Cash Advance-to-Spending Ratio (CASR)
+Tracks the ratio of cash advances to total spending. A high ratio might indicate risky borrowing.
+df['CASR'] = df.groupby('Temp_key')['trans_amt'].transform('sum') / df['foreign_amt']
+
+
+7. Transaction Frequency Normalization (TFN)
+Measures the transaction frequency adjusted for seasonal variations.
+df['TFN'] = df.groupby('Temp_key')['sale_dt'].transform(lambda x: len(x) / (x.max() - x.min()).days)
+
+
+8. Transaction-to-Authorization Mismatch Ratio (TAMR)
+The ratio of authorization amount to transaction amount, capturing authorization anomalies.
+df['TAMR'] = df['auth_amt'] / df['trans_amt']
+
+
+9. Payment Delay Variability (PDV)
+Measures the variability in time between transactions, which could suggest irregular financial activity.
+df['PDV'] = df.groupby('Temp_key')['sale_dt'].transform(lambda x: np.std(x.diff()))
+
+
+10. Refund Frequency Anomaly (RFA)
+Tracks the frequency of refunds. Higher-than-average refunds can indicate refund abuse or fraud.
+df['RFA'] = df.groupby('Temp_key')['refunds_fin_sub_cd'].transform('sum') / df.groupby('Temp_key')['trans_amt'].transform('count')
+
+
+
+2. Volume and Velocity Features
+
+These features help detect anomalies in transaction volume, velocity, and timing, which are critical for identifying RegZ violations, especially in high-frequency or high-value transactions.
+
+11. Transaction Volume Spike (TVS)
+Measures transaction volume spikes, which can indicate suspicious activity.
+df['TVS'] = df.groupby('Temp_key')['trans_amt'].transform(lambda x: x.rolling(5).sum().max())
+
+
+12. Spend-to-Limit Ratio (SLR)
+Tracks the proportion of credit utilization, revealing users who consistently overspend compared to their limit.
+df['SLR'] = df['trans_amt'] / df['stlmt_rt']
+
+
+13. Peak Transaction Deviation (PTD)
+Captures the deviation of peak transaction amounts from the average.
+df['PTD'] = df['trans_amt'] - df.groupby('Temp_key')['trans_amt'].transform('max')
+
+
+14. Monthly Spend Acceleration (MSA)
+Measures the rate of change in spending on a monthly basis, highlighting rapid spend increases.
+df['MSA'] = df.groupby('Temp_key')['trans_amt'].transform(lambda x: x.pct_change().mean())
+
+
+15. Transaction Frequency Drift (TFD)
+Measures the drift in transaction frequency across different time periods, capturing anomalous shifts.
+df['TFD'] = df.groupby('Temp_key')['sale_dt'].transform(lambda x: len(x) / (x.max() - x.min()).days)
+
+
+16. High-Value Transaction Ratio (HVTR)
+Measures the ratio of high-value transactions to total transactions. A spike may indicate irregular activity.
+df['HVTR'] = (df['trans_amt'] > 1000).sum() / df.groupby('Temp_key')['trans_amt'].transform('count')
+
+
+17. Transaction Overlap (TO)
+Measures how many transactions occur within a short time frame. A high overlap could suggest suspicious behavior.
+df['TO'] = df.groupby('Temp_key')['sale_dt'].transform(lambda x: (x.diff() < pd.Timedelta('1 hour')).sum())
+
+
+18. Cross-Border Transaction Volume (CBTV)
+Tracks the proportion of cross-border transactions, a potential red flag for APR-related fraud.
+df['CBTV'] = df.groupby('Temp_key')['foreign_amt'].transform('sum') / df.groupby('Temp_key')['trans_amt'].transform('sum')
+
+
+19. Transaction Hour Spike (THS)
+Captures spikes in transactions within a particular time window (e.g., late at night).
+df['THS'] = df.groupby([df['sale_dt'].dt.hour, 'Temp_key'])['trans_amt'].transform('sum')
+
+
+20. Dynamic Transaction Cycle (DTC)
+Measures the frequency of transactions within a user’s payment cycle to detect irregular transaction cycles.
+df['DTC'] = df.groupby('Temp_key')['sale_dt'].transform(lambda x: x.diff().mode()[0])
+
+
+
+3. Fee and Charge Analysis Features
+
+These features analyze fees and charges, which are crucial for RegZ compliance. They highlight anomalies in fee structures and potential violations.
+
+21. Fee-to-Transaction Ratio (FTR)
+Measures the proportion of fees relative to transaction amounts, signaling unusually high fee structures.
+df['FTR'] = df['foreign_fee_flag_ind'] / df['trans_amt']
+
+
+22. Fee-to-Total Spend (FTS)
+Measures the ratio of fees to total spend, which could signal potential fee abuse.
+df['FTS'] = df.groupby('Temp_key')['foreign_fee_flag_ind'].transform('sum') / df.groupby('Temp_key')['trans_amt'].transform('sum')
+
+
+23. Fee Irregularity Index (FII)
+Detects variations in fee structures over time, helping identify unusual fee adjustments.
+df['FII'] = df.groupby('Temp_key')['fee_int_adj_cd'].transform(lambda x: x.nunique())
+
+
+24. Dynamic Fee Growth Rate (DFGR)
+Measures how fast fees are increasing, highlighting rapid or suspicious fee hikes.
+df['DFGR'] = df.groupby('Temp_key')['foreign_fee_flag_ind'].transform(lambda x: x.pct_change().mean())
+
+
+25. Fee Deviation Spike (FDS)
+Measures large deviations in fee amounts, which could indicate hidden fees or non-compliant fee practices.
+df['FDS'] = df['foreign_fee_flag_ind'] - df.groupby('Temp_key')['foreign_fee_flag_ind'].transform('mean')
+
+
+26. Fixed vs Variable Fee Ratio (FvVR)
+Tracks the ratio of fixed to variable fees for transactions, indicating potential fee manipulation.
+df['FvVR'] = df.groupby('Temp_key')['fee_int_adj_cd'].transform(lambda x: (x == 'fixed').sum() / (x == 'variable').sum())
+
+
+27. Fee Absorption by Merchant (FAM)
+Measures how much of the fee burden is absorbed by the merchant, which could impact APR and regulation.
+df['FAM'] = df.groupby('merch_num')['foreign_fee_flag_ind'].transform('sum') / df.groupby('merch_num')['trans_amt'].transform('sum')
+
+
+28. Excessive Fee Ratio (EFR)
+Identifies users who are paying a disproportionately high amount in fees relative to their transaction volume.
+df['EFR'] = df.groupby('Temp_key')['foreign_fee_flag_ind'].transform('sum') / df.groupby('Temp_key')['trans_amt'].transform('sum')
+
+
+29. Penalty Fee Frequency (PFF)
+Tracks the frequency of penalty fees applied to a user, which may signal compliance issues.
+df['PFF'] = df.groupby('Temp_key')['fee_int_adj_cd'].transform(lambda x: (x == 'penalty').sum())
+
+
+30. APR-Linked Fee Discrepancy (ALFD)
+Measures the discrepancy between APR charges and associated fees, identifying potential mismatches.
+df['ALFD'] = df['ca_apr'] - df['foreign_fee_flag_ind']
+
+
+
+4. Merchant and Geospatial Features
+
+These features focus on merchant behavior, geographical patterns, and location-based anomalies, which can help identify outlier behavior across different regions or merchants.
+
+31. Merchant Transaction Concentration (MTC)
+Measures how concentrated a user's transactions are across merchants, indicating potential fraud or fee abuse.
+df['MTC'] = df.groupby('Temp_key')['merch_num'].transform('nunique') / df.groupby('Temp_key')['trans_amt'].transform('count')
+
+
+32. Zip Code Spend Distribution (ZCSD)
+Analyzes how spending is distributed across different ZIP codes, identifying potential outliers in transaction location.
+df['ZCSD'] = df.groupby('zip_cd')['trans_amt'].transform('sum') / df.groupby('Temp_key')['trans_amt'].transform('sum')
+
+
+33. Geographic Fee Variance (GFV)
+Captures how fees vary across different geographical locations, signaling potential non-compliance.
+df['GFV'] = df.groupby('zip_cd')['foreign_fee_flag_ind'].transform('std')
+
+
+34. Merchant Location Fee Index (MLFI)
+Identifies anomalies in fee structures based on merchant location, indicating non-compliant practices.
+df['MLFI'] = df.groupby('merch_num')['foreign_fee_flag_ind'].transform('mean')
+
+
+35. High-Risk Merchant Ratio (HRMR)
+Measures the percentage of high-risk merchants in a user’s transaction history.
+df['HRMR'] = df.groupby('Temp_key')['merch_num'].transform(lambda x: (x == 'high_risk').sum()) / len(x)
+
+
+36. Transaction Concentration Ratio (TCR)
+Analyzes transaction volume concentration per merchant, potentially flagging irregular merchant practices.
+df['TCR'] = df.groupby('Temp_key')['merch_num'].transform(lambda x: len(x.unique()) / len(x))
+
+
+37. Cross-Merchant Transaction Spike (CMTS)
+Identifies spikes in transactions across multiple merchants, which could signal anomalous behavior.
+df['CMTS'] = df.groupby('Temp_key')['merch_num'].transform(lambda x: x.value_counts().max())
+
+
+38. Merchant Spend Deviation (MSD)
+Tracks deviations in merchant-specific transaction amounts over time.
+df['MSD'] = df.groupby('merch_num')['trans_amt'].transform(lambda x: x.std())
+
+
+39. Geographical Spend Spike (GSS)
+Captures spikes in spending within specific geographical regions, indicating potentially fraudulent activity.
+df['GSS'] = df.groupby('zip_cd')['trans_amt'].transform(lambda x: (x > x.mean() + 3 * x.std()).sum())
+
+
+40. Foreign Spend Distribution (FSD)
+Measures the proportion of foreign spend in various regions, indicating potential misuse of cross-border transactions.
+df['FSD'] = df.groupby('zip_cd')['foreign_amt'].transform('sum') / df.groupby('zip_cd')['trans_amt'].transform('sum')
+
+
+
+5. Temporal Features
+
+These features track time-related anomalies in transaction behavior, critical for identifying RegZ compliance issues that emerge based on timing patterns.
+
+41. Transaction Timing Deviation (TTD)
+Measures the deviation in transaction timings across a user’s transaction history.
+df['TTD'] = df.groupby('Temp_key')['sale_dt'].transform(lambda x: np.std(x.diff()))
+
+
+42. Late Payment Trigger (LPT)
+Captures the number of late payments a user has made in relation to their purchase cycle.
+df['LPT'] = df.groupby('Temp_key')['sale_dt'].transform(lambda x: (x.diff() > pd.Timedelta('30 days')).sum())
+
+
+43. Time of Day Transaction Peak (TODP)
+Identifies peak transaction hours, which can flag fraudulent or outlier behavior during late hours.
+df['TODP'] = df.groupby('sale_dt'].dt.hour)['trans_amt'].transform('sum')
+
+
+44. Holiday Transaction Surge (HTS)
+Tracks spikes in transactions during specific holidays or periods, which may indicate improper fee adjustments.
+df['HTS'] = df.groupby('sale_dt')['trans_amt'].transform(lambda x: x.max())
+
+
+45. Monthly Transaction Cycle (MTC)
+Measures how often users are transacting within a month. Regular cycles can highlight risks for non-compliance.
+df['MTC'] = df.groupby('Temp_key')['sale_dt'].transform(lambda x: (x.max() - x.min()).days / 30)
+
+
+46. Transaction-to-Posting Time (TPT)
+Measures the delay between a transaction and its posting, which can signal fraudulent activities.
+df['TPT'] = (df['sale_dt'] - df['bnk_net_mmdd']).dt.total_seconds()
+
+
+
+47
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 Here is the Python code to calculate the 50 advanced features for detecting anomalies related to RegZ compliance. I've broken them down into the five perspectives we discussed earlier. The code assumes that you have a Pandas DataFrame named df containing the transaction data with relevant columns.
 
 1. Behavioral Features
