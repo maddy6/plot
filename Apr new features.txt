@@ -1,6 +1,138 @@
 import pandas as pd
 import numpy as np
 
+# Set random seed for reproducibility
+np.random.seed(42)
+
+# Generate Dummy Datasets
+# Profitability Dataset
+profitability = pd.DataFrame({
+    'ccid': np.arange(1, 5001),
+    'current_pure_purch_trans_bal_amt': np.random.randint(1000, 10000, 5000),
+    'previous_pure_purch_trans_bal_amt': np.random.randint(1000, 10000, 5000),
+    'current_interest': np.random.uniform(0.1, 0.3, 5000),
+    'previous_interest': np.random.uniform(0.05, 0.25, 5000),
+    'current_bk3_score_val': np.random.randint(600, 800, 5000),
+    'previous_bk3_score_val': np.random.randint(600, 800, 5000),
+    'util_ncc_brt_cl': np.random.randint(5000, 15000, 5000),
+    'amort_balcon_fee_amt': np.random.randint(100, 500, 5000),
+    'tot_pts_amount': np.random.randint(100, 1000, 5000),
+    'previous_tot_pts_amount': np.random.randint(100, 1000, 5000)
+})
+
+# Transaction Dataset
+transaction = pd.DataFrame({
+    'ccid': np.arange(1, 5001),
+    'late_fees': np.random.randint(0, 50, 5000),
+    'total_all_fee_amt': np.random.randint(50, 200, 5000),
+    'net_interest_amt': np.random.randint(100, 300, 5000),
+    'cost_fix_epymt_amt': np.random.randint(300, 600, 5000),
+    'cost_dlnq_coll_amt': np.random.randint(10, 50, 5000),
+    'days_since_last_payment': np.random.randint(1, 60, 5000),
+    'card_prod_tier_cd': np.random.choice(['A', 'B', 'C'], 5000),
+    'ca_credi_limit': np.random.randint(10000, 20000, 5000),
+    'interest': np.random.randint(50, 200, 5000),
+    'foreign_sales_ind': np.random.choice([0, 1], 5000)
+})
+
+# Billing Dataset
+billing = pd.DataFrame({
+    'ccid': np.arange(1, 5001),
+    'purch_pay_amt': np.random.randint(500, 2000, 5000),
+    'previous_purch_pay_amt': np.random.randint(500, 2000, 5000)
+})
+
+# Merging Datasets on 'ccid'
+merged_df = profitability.merge(transaction, on='ccid', how='inner')
+merged_df = merged_df.merge(billing, on='ccid', how='inner')
+
+# Feature Engineering
+# 1. ARER
+merged_df['ARER'] = (
+    (merged_df['current_pure_purch_trans_bal_amt'] - merged_df['previous_pure_purch_trans_bal_amt']) *
+    (merged_df['current_bk3_score_val'] - merged_df['previous_bk3_score_val']) /
+    (merged_df['current_interest'] - merged_df['previous_interest'])
+)
+
+# 2. MPASI
+merged_df['APR_mean'] = merged_df['current_interest'].mean()
+merged_df['APR_std'] = merged_df['current_interest'].std()
+merged_df['MPASI'] = merged_df['APR_std'] / merged_df['APR_mean']
+
+# 3. DAPI
+merged_df['DAPI'] = (merged_df['late_fees'] * merged_df['total_all_fee_amt']) / merged_df['current_interest']
+
+# 4. ADFRE
+merged_df['ADFRE'] = (merged_df['net_interest_amt'] - (merged_df['cost_fix_epymt_amt'] + merged_df['cost_dlnq_coll_amt'])) / merged_df['current_interest']
+
+# 5. HAV
+merged_df['days_elapsed'] = 30  # Placeholder for demo
+merged_df['HAV'] = (merged_df['current_interest'] - merged_df['previous_interest']) / merged_df['days_elapsed']
+
+# 6. MCI
+merged_df['MCI'] = merged_df['ca_credi_limit'] / merged_df['current_pure_purch_trans_bal_amt']
+
+# 7. APFV
+merged_df['APFV'] = (
+    (merged_df['current_interest'] / merged_df['util_ncc_brt_cl']) *
+    np.log1p(merged_df['amort_balcon_fee_amt'])
+)
+
+# 8. DEI
+merged_df['DEI'] = merged_df['days_since_last_payment'] / merged_df['ca_credi_limit']
+
+# 9. LLR
+merged_df['LLR'] = (
+    (merged_df['total_all_fee_amt'] - merged_df['net_interest_amt']) /
+    (merged_df['current_pure_purch_trans_bal_amt'] + 1e-9)
+)
+
+# 10. TDA
+merged_df['TDA'] = (
+    (merged_df['tot_pts_amount'] - merged_df['previous_tot_pts_amount']) /
+    (merged_df['amort_balcon_fee_amt'] + 1e-9)
+)
+
+# 11. APR Sensitivity (APR_SEN)
+merged_df['APR_SEN'] = (merged_df['current_interest'] - merged_df['previous_interest']) / merged_df['days_since_last_payment']
+
+# 12. Payment-to-APR Ratio (PTAR)
+merged_df['PTAR'] = merged_df['purch_pay_amt'] / (merged_df['current_interest'] + 1e-9)
+
+# 13. Portfolio Impact Score (PIS)
+merged_df['PIS'] = (
+    (merged_df['net_interest_amt'] - merged_df['cost_fix_epymt_amt']) /
+    (merged_df['current_pure_purch_trans_bal_amt'] + merged_df['tot_pts_amount'] + 1e-9)
+)
+
+# 14. Foreign Sales Impact (FSI)
+merged_df['FSI'] = merged_df['foreign_sales_ind'] * merged_df['current_interest']
+
+# 15. Adjusted APR Variance (AAV)
+merged_df['AAV'] = (
+    (merged_df['APR_std'] * merged_df['APR_mean']) /
+    (merged_df['current_interest'] + 1e-9)
+)
+
+# Display final merged dataset with all features
+print(merged_df.head())
+
+# Export to CSV if needed
+merged_df.to_csv("final_dataset_with_all_features.csv", index=False)
+
+
+
+
+
+
+
+
+
+
+
+import pandas as pd
+import numpy as np
+
 # Sample dataset: Replace with actual data
 data = pd.DataFrame({
     'current_pure_purch_trans_bal_amt': [5000, 6000, 5800],
