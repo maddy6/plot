@@ -1,3 +1,16 @@
+# Behavioral Features
+
+# TFN (Transaction Frequency Normalization): Frequency of transactions per user over the time period.
+# Ensuring no division by zero by adding a small epsilon value when max and min dates are the same.
+epsilon = 1e-6  # Small value to avoid division by zero
+
+df['TFN'] = df.groupby('Temp_key')['sale_dt'].transform(lambda x: len(x) / max((x.max() - x.min()).days, epsilon))
+
+
+
+
+
+
 import pandas as pd
 import numpy as np
 
