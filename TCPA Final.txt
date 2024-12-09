@@ -1,3 +1,58 @@
+import pandas as pd
+import numpy as np
+from sklearn.ensemble import IsolationForest
+from sklearn.feature_extraction.text import TfidfVectorizer
+from gensim.models import Word2Vec
+from mlxtend.frequent_patterns import fpgrowth
+from scipy.stats import entropy
+
+# Load Datasets
+complaints = pd.read_csv("complaints.csv")
+journeys = pd.read_csv("journeys.csv")
+
+# Merge Datasets
+merged_data = complaints.merge(journeys, on="ccid", how="inner")
+
+# Feature Engineering
+# (a) Entropy-Based Features
+def calculate_entropy(series):
+    counts = series.value_counts()
+    return entropy(counts)
+
+merged_data['complaint_entropy'] = merged_data.groupby('ccid')['complaint_description'].transform(calculate_entropy)
+
+# (b) Cluster-Based Features
+# Use DBSCAN for clustering
+from sklearn.cluster import DBSCAN
+db = DBSCAN(eps=0.5, min_samples=5).fit(merged_data[['visit_count']])
+merged_data['interaction_cluster'] = db.labels_
+
+# (c) Word2Vec Embedding Features
+# Train Word2Vec on Complaint Descriptions
+complaint_texts = complaints['complaint_description'].astype(str).str.split()
+w2v_model = Word2Vec(complaint_texts, vector_size=50, window=5, min_count=2)
+complaints['w2v_similarity'] = complaints['complaint_description'].apply(
+    lambda x: np.mean([w2v_model.wv[word] for word in x.split() if word in w2v_model.wv], axis=0)
+)
+
+# (d) Association-Based Features
+frequent_patterns = fpgrowth(merged_data[['complaint_description', 'event_nm']], min_support=0.01, use_colnames=True)
+merged_data['strong_patterns'] = frequent_patterns['itemsets']
+
+# Anomaly Detection Model
+iso_forest = IsolationForest(contamination=0.01, random_state=42)
+merged_data['anomaly_score'] = iso_forest.fit_predict(merged_data[['complaint_entropy', 'visit_count']])
+
+# Results
+anomalies = merged_data[merged_data['anomaly_score'] == -1]
+print("Detected Anomalies:")
+print(anomalies.head())
+
+
+
+
+
+
 Feature Engineering with New Datasets
 Feature Name	Formula/Logic	Why It Captures Anomalies
 Total Interaction Count	journey.groupby('temp_key')['visit_count'].sum()	High interaction count indicates potential excessive/unwanted communication.
