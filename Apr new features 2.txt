@@ -1,3 +1,170 @@
+Sure! If you would like to perform Fee and Charge Analysis based on different features from the transaction dataset instead of foreign_fee_flag_ind, here are a few other features you can consider:
+
+1. trans_amt: Transaction amount, which will allow you to calculate how much of the fee is in proportion to the total transaction.
+
+
+2. foreign_amt: The foreign amount involved in the transaction, which could be important when analyzing cross-border or foreign transactions.
+
+
+3. ca_adv_assessed_fee_amt: This represents any fees assessed for advances, which may be useful when assessing fee impact on transactions.
+
+
+4. assn_interchange_amt: This represents the interchange fee assigned to the transaction.
+
+
+5. stlmt_rt: The settlement rate could be used to analyze the impact of fees related to currency conversion or settlement.
+
+
+
+New Feature Ideas for Fee and Charge Analysis:
+
+1. Fee-to-Transaction Ratio (FTR):
+
+This feature will help assess how much fee is being charged for each transaction.
+
+Formula: FTR = (ca_adv_assessed_fee_amt + assn_interchange_amt) / trans_amt
+
+
+2. Foreign Transaction Fee Ratio (FTRR):
+
+Analyzing the ratio of foreign fees (if applicable) compared to the transaction amount.
+
+Formula: FTRR = foreign_amt / trans_amt
+
+
+3. Advance Fee Ratio (AFR):
+
+How much of the transaction is being charged as an advance fee.
+
+Formula: AFR = ca_adv_assessed_fee_amt / trans_amt
+
+
+4. Cross-Border Fee Ratio (CBFR):
+
+Calculating the fee charged for cross-border transactions based on the foreign amount.
+
+Formula: CBFR = foreign_amt / (trans_amt + 1e-9)  # To prevent division by zero
+
+
+5. Settlement Rate Fee Impact (SRFI):
+
+How the settlement rate affects fees. It could indicate the impact of currency conversion or settlement-related fees.
+
+Formula: SRFI = stlmt_rt * (ca_adv_assessed_fee_amt + assn_interchange_amt)
+
+
+6. Foreign Fee Conversion Impact (FSCI):
+
+The impact of foreign currency conversion on transaction fees.
+
+Formula: FSCI = foreign_amt * frgn_cnvrtn_rt / (trans_amt + 1e-9)
+
+
+7. Fee Impact per Transaction Type (FIPT):
+
+An analysis of fees with respect to different transaction types.
+
+Formula: FIPT = assn_interchange_amt / (trans_amt + 1e-9)
+
+
+8. Transaction-to-Settlement Ratio (TSR):
+
+This ratio helps understand the relationship between transaction amounts and their settlement values.
+
+Formula: TSR = trans_amt / (stlmt_rt + 1e-9)
+
+
+9. Total Fees as Percentage of Transaction Amount (TFPT):
+
+This feature calculates the total percentage of fees relative to the transaction amount.
+
+Formula: TFPT = (ca_adv_assessed_fee_amt + assn_interchange_amt) / trans_amt * 100
+
+
+10. Refund Fee Ratio (RFR):
+
+Assessing the relationship between refunded amounts and the fee charged during the transaction.
+
+Formula: RFR = refunds_fin_sub_cd / (trans_amt + 1e-9)
+
+
+Python Code for Fee and Charge Analysis Features
+
+# Fee and Charge Analysis Features
+# 1. Fee-to-Transaction Ratio (FTR)
+df['FTR'] = (df['ca_adv_assessed_fee_amt'] + df['assn_interchange_amt']) / (df['trans_amt'] + 1e-9)
+
+# 2. Foreign Transaction Fee Ratio (FTRR)
+df['FTRR'] = df['foreign_amt'] / (df['trans_amt'] + 1e-9)
+
+# 3. Advance Fee Ratio (AFR)
+df['AFR'] = df['ca_adv_assessed_fee_amt'] / (df['trans_amt'] + 1e-9)
+
+# 4. Cross-Border Fee Ratio (CBFR)
+df['CBFR'] = df['foreign_amt'] / (df['trans_amt'] + 1e-9)
+
+# 5. Settlement Rate Fee Impact (SRFI)
+df['SRFI'] = df['stlmt_rt'] * (df['ca_adv_assessed_fee_amt'] + df['assn_interchange_amt'])
+
+# 6. Foreign Fee Conversion Impact (FSCI)
+df['FSCI'] = df['foreign_amt'] * df['frgn_cnvrtn_rt'] / (df['trans_amt'] + 1e-9)
+
+# 7. Fee Impact per Transaction Type (FIPT)
+df['FIPT'] = df['assn_interchange_amt'] / (df['trans_amt'] + 1e-9)
+
+# 8. Transaction-to-Settlement Ratio (TSR)
+df['TSR'] = df['trans_amt'] / (df['stlmt_rt'] + 1e-9)
+
+# 9. Total Fees as Percentage of Transaction Amount (TFPT)
+df['TFPT'] = (df['ca_adv_assessed_fee_amt'] + df['assn_interchange_amt']) / (df['trans_amt'] + 1e-9) * 100
+
+# 10. Refund Fee Ratio (RFR)
+df['RFR'] = df['refunds_fin_sub_cd'] / (df['trans_amt'] + 1e-9)
+
+Explanation of New Features:
+
+1. Fee-to-Transaction Ratio (FTR): Helps identify if there is an unusually high fee compared to the transaction amount, which could indicate anomalous fee behavior.
+
+
+2. Foreign Transaction Fee Ratio (FTRR): Helps identify excessive foreign transaction fees as a proportion of the total transaction.
+
+
+3. Advance Fee Ratio (AFR): Detects whether a disproportionate amount is being charged as an advance fee, which could be an indication of irregular practices.
+
+
+4. Cross-Border Fee Ratio (CBFR): Identifies if there is an unusually high foreign fee for international transactions, which could highlight irregularities in foreign transaction charges.
+
+
+5. Settlement Rate Fee Impact (SRFI): Assesses the relationship between settlement rates and fees, helping to capture potential anomalies related to currency conversion or settlement mismatches.
+
+
+6. Foreign Fee Conversion Impact (FSCI): Identifies excessive foreign fee conversion charges based on the exchange rate, potentially signaling overcharging or currency manipulation.
+
+
+7. Fee Impact per Transaction Type (FIPT): Analyzes how fees impact different types of transactions, identifying outliers.
+
+
+8. Transaction-to-Settlement Ratio (TSR): Compares the transaction amount with the settlement rate to see if the fees correspond reasonably to the transaction's settlement value.
+
+
+9. Total Fees as Percentage of Transaction Amount (TFPT): A standard metric to identify if fees as a percentage of transaction amounts are higher than normal.
+
+
+10. Refund Fee Ratio (RFR): Assesses the correlation between refunded transactions and the fees charged, which may reveal incorrect fee assessments.
+
+
+
+These new features provide a deep analysis of fees and charges associated with transactions, which can help identify potential anomalies related to RegZ regulations, such as overcharging, foreign transaction fees, and excessive advance fees.
+
+
+
+
+
+
+
+
+
+
 # Fee and Charge Analysis Features
 
 # Perform One-Hot Encoding on 'foreign_fee_flag_ind'
