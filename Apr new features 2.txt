@@ -1,3 +1,89 @@
+import pandas as pd
+import numpy as np
+
+# Assuming df is your transaction dataset DataFrame
+
+# Behavioral Features
+df['TVI'] = df.groupby('Temp_key')['trans_amt'].transform(lambda x: np.std(x))
+df['FTF'] = df.groupby('Temp_key')['foreign_amt'].transform('sum') / df.groupby('Temp_key')['trans_amt'].transform('sum')
+df['FCCR'] = df.groupby('Temp_key')['frgn_cnvrtn_rt'].transform(lambda x: np.std(x))
+df['ATD'] = df['trans_amt'] - df.groupby('Temp_key')['trans_amt'].transform('mean')
+df['MDI'] = df.groupby('Temp_key')['merch_num'].transform('nunique')
+df['CASR'] = df.groupby('Temp_key')['foreign_amt'].transform('sum') / df['trans_amt']
+df['TFN'] = df.groupby('Temp_key')['sale_dt'].transform(lambda x: len(x) / (x.max() - x.min()).days)
+df['TAMR'] = df['auth_amt'] / df['trans_amt']
+df['PDV'] = df.groupby('Temp_key')['sale_dt'].transform(lambda x: np.std(x.diff()))
+df['RFA'] = df.groupby('Temp_key')['refunds_fin_sub_cd'].transform('sum') / df.groupby('Temp_key')['trans_amt'].transform('count')
+
+# Volume and Velocity Features
+df['TVS'] = df.groupby('Temp_key')['trans_amt'].transform(lambda x: x.rolling(5).sum().max())
+df['SLR'] = df['trans_amt'] / df['stlmt_rt']
+df['PTD'] = df['trans_amt'] - df.groupby('Temp_key')['trans_amt'].transform('max')
+df['MSA'] = df.groupby('Temp_key')['trans_amt'].transform(lambda x: x.pct_change().mean())
+df['TFD'] = df.groupby('Temp_key')['sale_dt'].transform(lambda x: len(x) / (x.max() - x.min()).days)
+df['HVTR'] = (df['trans_amt'] > 1000).sum() / df.groupby('Temp_key')['trans_amt'].transform('count')
+df['TO'] = df.groupby('Temp_key')['sale_dt'].transform(lambda x: (x.diff() < pd.Timedelta('1 hour')).sum())
+df['CBTV'] = df.groupby('Temp_key')['foreign_amt'].transform('sum') / df.groupby('Temp_key')['trans_amt'].transform('sum')
+df['THS'] = df.groupby([df['sale_dt'].dt.hour, 'Temp_key'])['trans_amt'].transform('sum')
+df['DTC'] = df.groupby('Temp_key')['sale_dt'].transform(lambda x: x.diff().mode()[0])
+
+# Fee and Charge Analysis Features
+df['FTR'] = df['foreign_fee_flag_ind'] / df['trans_amt']
+df['FTS'] = df.groupby('Temp_key')['foreign_fee_flag_ind'].transform('sum') / df.groupby('Temp_key')['trans_amt'].transform('sum')
+df['FII'] = df.groupby('Temp_key')['fee_int_adj_cd'].transform(lambda x: x.nunique())
+df['DFGR'] = df.groupby('Temp_key')['foreign_fee_flag_ind'].transform(lambda x: x.pct_change().mean())
+df['FDS'] = df['foreign_fee_flag_ind'] - df.groupby('Temp_key')['foreign_fee_flag_ind'].transform('mean')
+df['FvVR'] = df.groupby('Temp_key')['fee_int_adj_cd'].transform(lambda x: (x == 'fixed').sum() / (x == 'variable').sum())
+df['FAM'] = df.groupby('merch_num')['foreign_fee_flag_ind'].transform('sum') / df.groupby('merch_num')['trans_amt'].transform('sum')
+df['EFR'] = df.groupby('Temp_key')['foreign_fee_flag_ind'].transform('sum') / df.groupby('Temp_key')['trans_amt'].transform('sum')
+df['PFF'] = df.groupby('Temp_key')['fee_int_adj_cd'].transform(lambda x: (x == 'penalty').sum())
+df['ALFD'] = df['ca_apr'] - df['foreign_fee_flag_ind']
+
+# Merchant and Geospatial Features
+df['MTC'] = df.groupby('Temp_key')['merch_num'].transform('nunique') / df.groupby('Temp_key')['trans_amt'].transform('count')
+df['ZCSD'] = df.groupby('zip_cd')['trans_amt'].transform('sum') / df.groupby('Temp_key')['trans_amt'].transform('sum')
+df['GFV'] = df.groupby('zip_cd')['foreign_fee_flag_ind'].transform('std')
+df['MLFI'] = df.groupby('merch_num')['foreign_fee_flag_ind'].transform('mean')
+df['HRMR'] = df.groupby('Temp_key')['merch_num'].transform(lambda x: (x == 'high_risk').sum()) / len(x)
+df['TCR'] = df.groupby('Temp_key')['merch_num'].transform(lambda x: len(x.unique()) / len(x))
+df['CMTS'] = df.groupby('Temp_key')['merch_num'].transform(lambda x: x.value_counts().max())
+df['MSD'] = df.groupby('merch_num')['trans_amt'].transform(lambda x: x.std())
+df['GSS'] = df.groupby('zip_cd')['trans_amt'].transform(lambda x: (x > x.mean() + 3 * x.std()).sum())
+df['FSD'] = df.groupby('zip_cd')['foreign_amt'].transform('sum') / df.groupby('zip_cd')['trans_amt'].transform('sum')
+
+# Temporal Features
+df['TTD'] = df.groupby('Temp_key')['sale_dt'].transform(lambda x: np.std(x.diff()))
+df['LPT'] = df.groupby('Temp_key')['sale_dt'].transform(lambda x: (x.diff() > pd.Timedelta('30 days')).sum())
+df['TODP'] = df.groupby('sale_dt'].dt.hour)['trans_amt'].transform('sum')
+df['HTS'] = df.groupby('sale_dt')['trans_amt'].transform(lambda x: x.max())
+df['MTC'] = df.groupby('Temp_key')['sale_dt'].transform(lambda x: (x.max() - x.min()).days / 30)
+df['TPT'] = (df['sale_dt'] - df['bnk_net_mmdd']).dt.total_seconds()
+
+# Final DataFrame with features
+final_df = df[['Temp_key', 'per_num', 'trans_amt', 'foreign_amt', 'auth_amt', 'foreign_fee_flag_ind', 'ca_apr', 'stlmt_rt', 
+               'sale_dt', 'merch_num', 'zip_cd', 'foreign_currency_cd', 'frgn_cnvrtn_rt', 'bankt_score_val', 'bgo_score_val', 
+               'fee_int_adj_cd'] + [col for col in df.columns if 'feature' in col]]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 To generate advanced, complex, and robust features based on your transaction dataset, we will leverage the following columns to create 50 features. These features will be geared toward detecting RegZ anomalies, focusing on relationships with APR (Annual Percentage Rate) use cases, spending behavior, payment structures, fee analysis, and merchant characteristics. These features are designed to extract hidden patterns that even SMEs may miss but can be captured through advanced analysis.
 
 Here's a breakdown of 50 complex features based on the provided dataset, organized into five perspectives.
