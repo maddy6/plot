@@ -1,0 +1,90 @@
+import pandas as pd
+import numpy as np
+
+# Sample dataset: Replace with actual data
+data = pd.DataFrame({
+    'current_pure_purch_trans_bal_amt': [5000, 6000, 5800],
+    'previous_pure_purch_trans_bal_amt': [5200, 5900, 6000],
+    'current_interest': [0.15, 0.20, 0.25],
+    'previous_interest': [0.10, 0.15, 0.20],
+    'current_bk3_score_val': [700, 720, 680],
+    'previous_bk3_score_val': [680, 710, 700],
+    'delnq_stat_cur_mon': [1, 0, 1],
+    'late_fees': [30, 20, 15],
+    'total_all_fee_amt': [100, 80, 120],
+    'cost_fix_epymt_amt': [500, 400, 450],
+    'cost_dlnq_coll_amt': [50, 60, 55],
+    'net_interest_amt': [200, 180, 220],
+    'util_ncc_brt_cl': [8000, 8500, 8700],
+    'amort_balcon_fee_amt': [300, 350, 330],
+    'days_since_last_payment': [30, 40, 25],
+    'card_prod_tier_cd': ['A', 'B', 'A'],
+    'ca_credi_limit': [15000, 20000, 18000],
+    'tot_pts_amount': [500, 600, 550],
+    'previous_tot_pts_amount': [450, 580, 540],
+    'interest': [200, 180, 220]
+})
+
+# 1. APR-Rebalancing Effectiveness Ratio (ARER)
+data['ARER'] = (
+    (data['current_pure_purch_trans_bal_amt'] - data['previous_pure_purch_trans_bal_amt']) *
+    (data['current_bk3_score_val'] - data['previous_bk3_score_val']) /
+    (data['current_interest'] - data['previous_interest'])
+)
+
+# 2. Multi-Period APR Adjustment Stability Index (MPASI)
+data['APR_mean'] = data['current_interest'].mean()
+data['APR_std'] = data['current_interest'].std()
+data['MPASI'] = data['APR_std'] / data['APR_mean']
+
+# 3. Delinquency-Adjusted APR Pressure Index (DAPI)
+data['DAPI'] = (data['delnq_stat_cur_mon'] * (data['late_fees'] + data['total_all_fee_amt'])) / data['current_interest']
+
+# 4. APR-Driven Fee Recovery Efficiency (ADFRE)
+data['ADFRE'] = (data['net_interest_amt'] - (data['cost_fix_epymt_amt'] + data['cost_dlnq_coll_amt'])) / data['current_interest']
+
+# 5. Dynamic APR-Balance Sensitivity Index (DABSI)
+data['DABSI'] = (data['amort_balcon_fee_amt'] - data['amort_balcon_fee_amt'].shift(1)) / (
+    data['current_interest'] - data['previous_interest'])
+
+# 6. Hidden APR Utilization Velocity (HAUV)
+data['HAUV'] = (data['util_ncc_brt_cl'] - data['util_ncc_brt_cl'].shift(1)) / (
+    data['days_since_last_payment'] - data['days_since_last_payment'].shift(1))
+
+# 7. Tiered APR Misalignment Index (TAMI)
+expected_apr_map = {'A': 0.15, 'B': 0.20, 'C': 0.25}
+data['expected_apr'] = data['card_prod_tier_cd'].map(expected_apr_map)
+data['TAMI'] = abs(data['current_interest'] - data['expected_apr'])
+
+# 8. APR Shock Transition Probability (ASTP)
+data['ASTP'] = data['current_interest'] / data['current_interest'].shift(1)
+
+# 9. Relative APR Outlier Score (RAOS)
+data['RAOS'] = (data['current_interest'] - data['current_interest'].mean()) / data['current_interest'].std()
+
+# 10. APR-Fee Conflict Index (AFCI)
+data['AFCI'] = (data['total_all_fee_amt'] - data['total_all_fee_amt'].shift(1)) / (
+    data['current_interest'] - data['previous_interest'])
+
+# 11. Payment-to-APR Sensitivity Index (PASI)
+data['purch_pay_amt'] = [1000, 1200, 1100]  # Add real column values
+data['previous_purch_pay_amt'] = [950, 1150, 1050]
+data['PASI'] = (data['purch_pay_amt'] - data['previous_purch_pay_amt']) / (
+    data['current_interest'] - data['previous_interest'])
+
+# 12. Historical APR Velocity (HAV)
+data['days_elapsed'] = [30, 30, 30]  # Add real column values
+data['HAV'] = (data['current_interest'] - data['previous_interest']) / data['days_elapsed']
+
+# 13. Interest-to-Credit Limit Utilization Ratio (ICLR)
+data['ICLR'] = data['current_interest'] / data['ca_credi_limit']
+
+# 14. Rolling APR Risk Score Correlation (RARC)
+data['rolling_corr'] = data[['current_bk3_score_val', 'current_interest']].rolling(window=3).corr().iloc[0::2]['current_interest']
+
+# 15. APR Impact on Earned Points (AIEP)
+data['AIEP'] = (data['tot_pts_amount'] - data['previous_tot_pts_amount']) / (
+    data['current_interest'] - data['previous_interest'])
+
+# Display final dataset
+print(data)
