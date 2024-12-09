@@ -1,3 +1,352 @@
+Here is a detailed explanation of how and why each group of features can capture anomaly patterns relevant to Regulation Z (RegZ) compliance use cases. RegZ primarily deals with ensuring fair and transparent credit and lending practices, focusing on APR calculations, fees, disclosures, and consumer protection.
+
+
+---
+
+Behavioral Features
+
+1. TVI (Transaction Variability Index)
+
+How: Measures the variability of transaction amounts for a particular user.
+
+Why: High variability in transaction amounts could indicate inconsistent spending patterns, which may be linked to unusual activities or errors in APR or fee calculation.
+
+
+
+2. FTF (Foreign Transaction Frequency)
+
+How: Ratio of foreign transactions to total transactions for a user.
+
+Why: Unusually high foreign transaction frequency may indicate potential misuse of the card or errors in charging foreign transaction fees.
+
+
+
+3. FCCR (Foreign Conversion Rate Consistency)
+
+How: Variability in foreign currency conversion rates.
+
+Why: Anomalies in conversion rates could highlight incorrect application of conversion rules, impacting fees and APR compliance.
+
+
+
+4. ATD (Amount Transaction Deviation)
+
+How: Difference between transaction amounts and the user's mean transaction amount.
+
+Why: Significant deviations might indicate one-time errors, mischarges, or fraudulent activities.
+
+
+
+5. MDI (Merchant Diversity Index)
+
+How: Count of unique merchants a user transacts with.
+
+Why: A very low or high count could suggest unusual purchasing behavior, such as repeated transactions with the same merchant to exploit fee structures.
+
+
+
+6. CASR (Card Average Spend Ratio)
+
+How: Ratio of total foreign transaction amounts to total transaction amounts.
+
+Why: Identifies anomalies in spending behavior, especially for users who rarely make foreign transactions.
+
+
+
+7. TFN (Transaction Frequency Normalization)
+
+How: Normalized transaction frequency over a given time window.
+
+Why: Irregular transaction patterns can indicate misuse or system-level issues in transaction authorization.
+
+
+
+8. TAMR (Transaction Amount Multiplicative Ratio)
+
+How: Ratio of authorized amount to transaction amount.
+
+Why: Discrepancies here may highlight issues with authorization processes or overcharging.
+
+
+
+9. PDV (Purchase Date Variability)
+
+How: Standard deviation of time differences between consecutive transactions.
+
+Why: Irregular transaction timings can flag anomalies in consumer behavior or system malfunctions.
+
+
+
+10. RFA (Refund Frequency Analysis)
+
+How: Ratio of refund codes to total transactions for a user.
+
+Why: Unusually high refund rates might indicate systemic errors in transaction processing or misuse.
+
+
+
+
+
+---
+
+Volume and Velocity Features
+
+1. TVS (Transaction Volume Spike)
+
+How: Rolling sum of transaction amounts over a fixed window, identifying peaks.
+
+Why: Spikes can signal batch processing errors, fraud, or one-time overcharges.
+
+
+
+2. SLR (Settlement Rate Ratio)
+
+How: Ratio of transaction amount to settlement rate.
+
+Why: Discrepancies here could point to issues in the application of settlement rates.
+
+
+
+3. PTD (Peak Transaction Deviation)
+
+How: Difference between a transaction amount and the user's maximum transaction amount.
+
+Why: Highlights extreme outlier transactions that may not align with user behavior or contractual terms.
+
+
+
+4. MSA (Mean Spending Acceleration)
+
+How: Average percentage change in transaction amounts.
+
+Why: Rapid increases in spending could indicate misuse or unaccounted charges.
+
+
+
+5. TFD (Transaction Frequency Density)
+
+How: Transaction count normalized over time.
+
+Why: High transaction density may suggest repeated charges or system errors.
+
+
+
+6. HVTR (High-Value Transaction Ratio)
+
+How: Proportion of transactions above a threshold value.
+
+Why: Helps identify anomalies in high-value transaction patterns.
+
+
+
+7. TO (Transaction Overlap)
+
+How: Counts transactions within short time intervals.
+
+Why: Overlapping transactions could indicate processing errors or fraudulent behavior.
+
+
+
+8. CBTV (Cross-Border Transaction Volume)
+
+How: Ratio of foreign transaction amounts to total transaction amounts.
+
+Why: Helps monitor unusual cross-border spending.
+
+
+
+9. THS (Transaction Hourly Spike)
+
+How: Sums transaction amounts by the hour of the day.
+
+Why: Peaks in certain hours may indicate batch errors or suspicious behavior.
+
+
+
+10. DTC (Dominant Time Consistency)
+
+How: Most frequent time interval between transactions.
+
+Why: Deviations from regular transaction intervals may flag system irregularities.
+
+
+
+
+
+---
+
+Fee and Charge Analysis Features
+
+1. FTR (Foreign Transaction Ratio)
+
+How: Ratio of foreign fee amounts to transaction amounts.
+
+Why: Identifies discrepancies in applied foreign transaction fees.
+
+
+
+2. FTS (Foreign Transaction Sum)
+
+How: Aggregated foreign fees divided by total transaction amounts.
+
+Why: Ensures compliance with fee caps and disclosure rules.
+
+
+
+3. FII (Fee Intensity Index)
+
+How: Count of unique fee adjustment codes.
+
+Why: Identifies patterns of fee adjustments across transactions.
+
+
+
+4. DFGR (Delta Fee Growth Rate)
+
+How: Percentage change in fee amounts over time.
+
+Why: Flags sudden increases in fees that may not comply with RegZ rules.
+
+
+
+5. FDS (Fee Deviation Score)
+
+How: Difference between individual fees and their average.
+
+Why: Highlights anomalies in fee application consistency.
+
+
+
+6. FvVR (Fixed vs. Variable Fee Ratio)
+
+How: Ratio of fixed to variable fee occurrences.
+
+Why: Ensures correct classification and application of fees.
+
+
+
+7. FAM (Fee Amount Mean)
+
+How: Mean fee amount per merchant.
+
+Why: Flags merchants with unusual fee structures.
+
+
+
+8. EFR (Effective Fee Ratio)
+
+How: Aggregated fees divided by total transaction amount.
+
+Why: Checks adherence to regulatory caps on effective fee percentages.
+
+
+
+9. PFF (Penalty Fee Frequency)
+
+How: Count of penalty fees for a user.
+
+Why: Helps detect overcharging or excessive penalties.
+
+
+
+10. ALFD (APR vs. Fee Differential)
+
+How: Difference between APR and aggregated fees.
+
+Why: Validates APR accuracy and compliance with disclosure requirements.
+
+
+
+
+
+---
+
+Merchant and Geospatial Features
+
+1. MTC (Merchant Transaction Consistency)
+
+
+2. ZCSD (Zip Code Spending Density)
+
+
+3. GFV (Geographic Fee Variability)
+
+
+4. MLFI (Merchant-Level Fee Intensity)
+
+
+5. HRMR (High-Risk Merchant Ratio)
+
+
+6. TCR (Transaction Count Ratio)
+
+
+7. CMTS (Common Merchant Transaction Spike)
+
+
+8. MSD (Merchant Spend Deviation)
+
+
+9. GSS (Geographic Spending Spike)
+
+
+10. FSD (Foreign Spending Density)
+
+
+
+
+---
+
+Temporal Features
+
+1. TTD (Transaction Time Deviation)
+
+
+2. LPT (Long Payment Timelines)
+
+
+3. TODP (Time of Day Payment Patterns)
+
+
+4. HTS (Hourly Transaction Spikes)
+
+
+5. MTC (Monthly Transaction Consistency)
+
+
+6. TPT (Transaction Posting Time)
+
+
+
+
+---
+
+If needed, I can expand on individual feature explanations further. Let me know!
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 Here is the complete Python code to generate the 10 FP-growth-based features using your transaction dataset. The code includes data preprocessing, applying FP-growth to find frequent itemsets, and creating the features based on those itemsets.
 
 Python Code for FP-growth-based Features:
