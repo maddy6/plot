@@ -1,3 +1,158 @@
+# 1. Risk Interaction Log-Sum Amplification
+df['log_sum_risk_interaction'] = np.log1p(
+    df['hct_mer_mcc_baysian_risk'] + 
+    df['hct_term_state_baysian_risk'] + 
+    df['ucm_avs_resp_baysian_risk'] + 
+    df['hct_term_country_code_baysian_risk']
+) * (
+    df['hct_mer_mcc_baysian_risk'] / (df['hct_term_state_baysian_risk'] + 1e-6)
+)
+
+# 2. Multi-dimensional Cross Multiplication
+df['cross_mult_risk'] = (
+    df['hct_mer_mcc_baysian_risk'] *
+    df['hct_term_state_baysian_risk'] *
+    df['ucm_avs_resp_baysian_risk'] *
+    df['hct_term_country_code_baysian_risk']
+) ** 0.25
+
+# 3. Symmetric Risk Divergence
+df['symmetric_risk_divergence'] = (
+    np.abs(df['hct_mer_mcc_baysian_risk'] - df['ucm_avs_resp_baysian_risk']) +
+    np.abs(df['hct_term_state_baysian_risk'] - df['hct_term_country_code_baysian_risk'])
+) / (
+    df['hct_mer_mcc_baysian_risk'] + df['hct_term_state_baysian_risk'] + 1e-6
+)
+
+# 4. Risk Hyperbolic Interaction
+df['hyperbolic_risk_interaction'] = np.tanh(
+    df['hct_mer_mcc_baysian_risk'] *
+    df['hct_term_state_baysian_risk'] -
+    df['ucm_avs_resp_baysian_risk'] *
+    df['hct_term_country_code_baysian_risk']
+)
+
+# 5. Bayesian Weighted Variance
+df['bayesian_weighted_variance'] = np.var([
+    df['hct_mer_mcc_baysian_risk'],
+    df['hct_term_state_baysian_risk'],
+    df['ucm_avs_resp_baysian_risk'],
+    df['hct_term_country_code_baysian_risk']
+], axis=0, ddof=1) * (df['hct_mer_mcc_baysian_risk'] + 1e-6)
+
+# 6. Risk Product-Sum Ratio
+df['risk_product_sum_ratio'] = (
+    (df['hct_mer_mcc_baysian_risk'] * df['hct_term_state_baysian_risk']) +
+    (df['ucm_avs_resp_baysian_risk'] * df['hct_term_country_code_baysian_risk'])
+) / (
+    df['hct_mer_mcc_baysian_risk'] + df['ucm_avs_resp_baysian_risk'] + 1e-6
+)
+
+# 7. Risk Dimensionality Reduction Score
+df['risk_dim_reduction'] = np.sqrt(
+    df['hct_mer_mcc_baysian_risk']**2 + 
+    df['hct_term_state_baysian_risk']**2 +
+    df['ucm_avs_resp_baysian_risk']**2 +
+    df['hct_term_country_code_baysian_risk']**2
+) / 2
+
+# 8. Exponential Weighted Risk Amplification
+df['exp_weighted_risk_amplification'] = np.exp(
+    0.5 * df['hct_mer_mcc_baysian_risk'] +
+    0.3 * df['hct_term_state_baysian_risk'] +
+    0.2 * df['ucm_avs_resp_baysian_risk']
+) - df['hct_term_country_code_baysian_risk']
+
+# 9. Risk Feature Cosine Similarity
+df['cosine_similarity_risk'] = (
+    df['hct_mer_mcc_baysian_risk'] * df['hct_term_state_baysian_risk'] +
+    df['ucm_avs_resp_baysian_risk'] * df['hct_term_country_code_baysian_risk']
+) / (
+    np.sqrt(
+        df['hct_mer_mcc_baysian_risk']**2 + df['ucm_avs_resp_baysian_risk']**2
+    ) + 1e-6
+)
+
+# 10. Non-Linear Risk Index
+df['nonlinear_risk_index'] = np.exp(
+    df['hct_mer_mcc_baysian_risk'] * 
+    np.log1p(df['hct_term_state_baysian_risk']) -
+    np.sqrt(df['ucm_avs_resp_baysian_risk'] + df['hct_term_country_code_baysian_risk'])
+)
+
+# 11. Risk Signal Variance Normalization
+df['risk_signal_var_norm'] = (
+    df['hct_mer_mcc_baysian_risk'] - df['hct_term_country_code_baysian_risk']
+) / (
+    df['ucm_avs_resp_baysian_risk'] + df['hct_term_state_baysian_risk'] + 1e-6
+)
+
+# 12. Log-Exponential Risk Ratio
+df['log_exp_risk_ratio'] = np.log1p(
+    df['hct_mer_mcc_baysian_risk'] /
+    (df['hct_term_state_baysian_risk'] + 1e-6)
+) * np.exp(df['ucm_avs_resp_baysian_risk'])
+
+# 13. Risk Combination Gradient
+df['risk_combination_gradient'] = np.gradient(
+    [df['hct_mer_mcc_baysian_risk'], 
+     df['hct_term_state_baysian_risk'], 
+     df['ucm_avs_resp_baysian_risk'], 
+     df['hct_term_country_code_baysian_risk']]
+).sum()
+
+# 14. Multi-Order Risk Polynomial Expansion
+df['multi_order_risk_poly'] = (
+    df['hct_mer_mcc_baysian_risk']**2 +
+    df['hct_term_state_baysian_risk']**2 -
+    2 * df['ucm_avs_resp_baysian_risk'] * df['hct_term_country_code_baysian_risk']
+)
+
+# 15. Risk Symmetry Index
+df['risk_symmetry_index'] = (
+    np.abs(df['hct_mer_mcc_baysian_risk'] - df['ucm_avs_resp_baysian_risk']) -
+    np.abs(df['hct_term_state_baysian_risk'] - df['hct_term_country_code_baysian_risk'])
+) / (df['hct_mer_mcc_baysian_risk'] + 1e-6)
+
+# 16. Combined Risk Activation Function
+df['combined_risk_activation'] = np.log1p(
+    df['hct_mer_mcc_baysian_risk'] *
+    np.tanh(df['hct_term_state_baysian_risk'] - df['ucm_avs_resp_baysian_risk'])
+)
+
+# 17. Hyperbolic Tangent Amplified Risk
+df['hyperbolic_tangent_risk'] = np.tanh(
+    df['hct_mer_mcc_baysian_risk'] + df['ucm_avs_resp_baysian_risk']
+) * np.log1p(df['hct_term_country_code_baysian_risk'])
+
+# 18. Root Mean Square Risk Deviation
+df['rms_risk_deviation'] = np.sqrt(
+    (df['hct_mer_mcc_baysian_risk'] - df['hct_term_state_baysian_risk'])**2 +
+    (df['ucm_avs_resp_baysian_risk'] - df['hct_term_country_code_baysian_risk'])**2
+)
+
+# 19. Divergence-Weighted Risk Score
+df['divergence_weighted_risk'] = (
+    df['hct_mer_mcc_baysian_risk'] * np.log1p(df['hct_term_country_code_baysian_risk'])
+) - (
+    df['hct_term_state_baysian_risk'] * df['ucm_avs_resp_baysian_risk']
+)
+
+# 20. Cumulative Risk Product Index
+df['cumulative_risk_product_index'] = (
+    np.cumprod([
+        df['hct_mer_mcc_baysian_risk'], 
+        df['hct_term_state_baysian_risk'], 
+        df['ucm_avs_resp_baysian_risk'], 
+        df['hct_term_country_code_baysian_risk']
+    ], axis=0)[-1]
+)
+
+
+
+
+
+
 # Weighted Log-Mean Risk
 df['weighted_log_mean_risk'] = np.log1p(
     0.4 * df['hct_mer_mcc_baysian_risk'] +
