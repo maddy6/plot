@@ -1,0 +1,133 @@
+import h2o
+from h2o.frame import H2OFrame
+import numpy as np
+
+# Initialize H2O
+h2o.init()
+
+# Example DataFrame (replace with your actual H2OFrame or import as needed)
+# df = h2o.import_file('your_file_path.csv')
+
+# Updated DataFrame name
+X_df = h2o.H2OFrame({
+    'hct_mer_mcc_bayesian_encoded': [0.1, 0.2, 0.3],
+    'hct_term_state_bayesian_encoded': [0.2, 0.3, 0.4],
+    'ucm_avs_resp_bayesian_encoded': [0.3, 0.4, 0.5],
+    'hct_term_cntry_code_bayesian_encoded': [0.4, 0.5, 0.6]
+})
+
+# 1. Risk Interaction Log-Sum Amplification
+X_df['log_sum_risk_interaction'] = (h2o.log1p(X_df['hct_mer_mcc_bayesian_encoded'] +
+                                          X_df['hct_term_state_bayesian_encoded'] +
+                                          X_df['ucm_avs_resp_bayesian_encoded'] +
+                                          X_df['hct_term_cntry_code_bayesian_encoded'])) * \
+                               (X_df['hct_mer_mcc_bayesian_encoded'] / (X_df['hct_term_state_bayesian_encoded'] + 1e-6))
+
+# 2. Multi-dimensional Cross Multiplication
+X_df['cross_mult_risk'] = (X_df['hct_mer_mcc_bayesian_encoded'] *
+                        X_df['hct_term_state_bayesian_encoded'] *
+                        X_df['ucm_avs_resp_bayesian_encoded'] *
+                        X_df['hct_term_cntry_code_bayesian_encoded']) ** 0.25
+
+# 3. Symmetric Risk Divergence
+X_df['symmetric_risk_divergence'] = ((h2o.abs(X_df['hct_mer_mcc_bayesian_encoded'] - X_df['ucm_avs_resp_bayesian_encoded']) +
+                                    h2o.abs(X_df['hct_term_state_bayesian_encoded'] - X_df['hct_term_cntry_code_bayesian_encoded'])) /
+                                    (X_df['hct_mer_mcc_bayesian_encoded'] + X_df['hct_term_state_bayesian_encoded'] + 1e-6))
+
+# 4. Risk Hyperbolic Interaction
+X_df['hyperbolic_risk_interaction'] = h2o.tanh(X_df['hct_mer_mcc_bayesian_encoded'] *
+                                          X_df['hct_term_state_bayesian_encoded'] -
+                                          X_df['ucm_avs_resp_bayesian_encoded'] *
+                                          X_df['hct_term_cntry_code_bayesian_encoded'])
+
+# 5. Bayesian Weighted Variance
+X_df['bayesian_weighted_variance'] = h2o.var(X_df[['hct_mer_mcc_bayesian_encoded',
+                                              'hct_term_state_bayesian_encoded',
+                                              'ucm_avs_resp_bayesian_encoded',
+                                              'hct_term_cntry_code_bayesian_encoded']], axis=0, ddof=1) * \
+                                   (X_df['hct_mer_mcc_bayesian_encoded'] + 1e-6)
+
+# 6. Risk Product-Sum Ratio
+X_df['risk_product_sum_ratio'] = ((X_df['hct_mer_mcc_bayesian_encoded'] * X_df['hct_term_state_bayesian_encoded']) +
+                                (X_df['ucm_avs_resp_bayesian_encoded'] * X_df['hct_term_cntry_code_bayesian_encoded'])) / \
+                                (X_df['hct_mer_mcc_bayesian_encoded'] + X_df['ucm_avs_resp_bayesian_encoded'] + 1e-6)
+
+# 7. Risk Dimensionality Reduction Score
+X_df['risk_dim_reduction'] = h2o.sqrt(X_df['hct_mer_mcc_bayesian_encoded']**2 +
+                                    X_df['hct_term_state_bayesian_encoded']**2 +
+                                    X_df['ucm_avs_resp_bayesian_encoded']**2 +
+                                    X_df['hct_term_cntry_code_bayesian_encoded']**2) / 2
+
+# 8. Exponential Weighted Risk Amplification
+X_df['exp_weighted_risk_amplification'] = h2o.exp(0.5 * X_df['hct_mer_mcc_bayesian_encoded'] +
+                                                0.3 * X_df['hct_term_state_bayesian_encoded'] +
+                                                0.2 * X_df['ucm_avs_resp_bayesian_encoded']) - \
+                                        X_df['hct_term_cntry_code_bayesian_encoded']
+
+# 9. Risk Feature Cosine Similarity
+X_df['cosine_similarity_risk'] = ((X_df['hct_mer_mcc_bayesian_encoded'] * X_df['hct_term_state_bayesian_encoded'] +
+                                X_df['ucm_avs_resp_bayesian_encoded'] * X_df['hct_term_cntry_code_bayesian_encoded']) /
+                                (h2o.sqrt(X_df['hct_mer_mcc_bayesian_encoded']**2 +
+                                          X_df['ucm_avs_resp_bayesian_encoded']**2)) + 1e-6)
+
+# 10. Non-Linear Risk Index
+X_df['nonlinear_risk_index'] = h2o.exp(X_df['hct_mer_mcc_bayesian_encoded'] * 
+                                     h2o.log1p(X_df['hct_term_state_bayesian_encoded']) - 
+                                     h2o.sqrt(X_df['ucm_avs_resp_bayesian_encoded'] + X_df['hct_term_cntry_code_bayesian_encoded']))
+
+
+
+# 11. Risk Signal Variance Normalization
+X_df['risk_signal_var_norm'] = (X_df['hct_mer_mcc_bayesian_encoded'] - X_df['hct_term_cntry_code_bayesian_encoded']) / \
+                             (X_df['ucm_avs_resp_bayesian_encoded'] + X_df['hct_term_state_bayesian_encoded'] + 1e-6)
+
+# 12. Log-Exponential Risk Ratio
+X_df['log_exp_risk_ratio'] = (h2o.log1p(X_df['hct_mer_mcc_bayesian_encoded'] / (X_df['hct_term_state_bayesian_encoded'] + 1e-6))) * \
+                          h2o.exp(X_df['ucm_avs_resp_bayesian_encoded'])
+
+# 13. Risk Combination Gradient
+X_df['risk_combination_gradient'] = h2o.gradient([
+    X_df['hct_mer_mcc_bayesian_encoded'], 
+    X_df['hct_term_state_bayesian_encoded'], 
+    X_df['ucm_avs_resp_bayesian_encoded'], 
+    X_df['hct_term_cntry_code_bayesian_encoded']
+]).sum()
+
+# 14. Multi-Order Risk Polynomial Expansion
+X_df['multi_order_risk_poly'] = (X_df['hct_mer_mcc_bayesian_encoded']**2 +
+                               X_df['hct_term_state_bayesian_encoded']**2 -
+                               2 * X_df['ucm_avs_resp_bayesian_encoded'] * X_df['hct_term_cntry_code_bayesian_encoded'])
+
+# 15. Risk Symmetry Index
+X_df['risk_symmetry_index'] = (h2o.abs(X_df['hct_mer_mcc_bayesian_encoded'] - X_df['ucm_avs_resp_bayesian_encoded']) -
+                            h2o.abs(X_df['hct_term_state_bayesian_encoded'] - X_df['hct_term_cntry_code_bayesian_encoded'])) / \
+                            (X_df['hct_mer_mcc_bayesian_encoded'] + 1e-6)
+
+# 16. Combined Risk Activation Function
+X_df['combined_risk_activation'] = h2o.log1p(X_df['hct_mer_mcc_bayesian_encoded'] *
+                                           h2o.tanh(X_df['hct_term_state_bayesian_encoded'] - X_df['ucm_avs_resp_bayesian_encoded']))
+
+# 17. Hyperbolic Tangent Amplified Risk
+X_df['hyperbolic_tangent_risk'] = h2o.tanh(X_df['hct_mer_mcc_bayesian_encoded'] + X_df['ucm_avs_resp_bayesian_encoded']) * \
+                                h2o.log1p(X_df['hct_term_cntry_code_bayesian_encoded'])
+
+# 18. Root Mean Square Risk Deviation
+X_df['rms_risk_deviation'] = h2o.sqrt((X_df['hct_mer_mcc_bayesian_encoded'] - X_df['hct_term_state_bayesian_encoded'])**2 +
+                                    (X_df['ucm_avs_resp_bayesian_encoded'] - X_df['hct_term_cntry_code_bayesian_encoded'])**2)
+
+# 19. Divergence-Weighted Risk Score
+X_df['divergence_weighted_risk'] = (X_df['hct_mer_mcc_bayesian_encoded'] * h2o.log1p(X_df['hct_term_cntry_code_bayesian_encoded'])) - \
+                                (X_df['hct_term_state_bayesian_encoded'] * X_df['ucm_avs_resp_bayesian_encoded'])
+
+# 20. Cumulative Risk Product Index
+X_df['cumulative_risk_product_index'] = h2o.cumprod([
+    X_df['hct_mer_mcc_bayesian_encoded'], 
+    X_df['hct_term_state_bayesian_encoded'], 
+    X_df['ucm_avs_resp_bayesian_encoded'], 
+    X_df['hct_term_cntry_code_bayesian_encoded']
+], axis=0)[-1]
+
+# View results
+df.head()
+
+
