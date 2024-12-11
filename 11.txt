@@ -1,5 +1,98 @@
 import numpy as np
 import pandas as pd
+from sklearn.decomposition import PCA
+from scipy.stats import entropy
+from sklearn.ensemble import IsolationForest
+
+# Assuming `df` is your DataFrame
+
+# 1. Risk-Weighted Entropy of MCC Utilization
+mcc_risk_distribution = df.groupby('mcc')['hct_mer_mcc_baysian_risk'].transform(lambda x: x / x.sum())
+df['risk_weighted_mcc_entropy'] = df.groupby('mcc')['tran_util'].transform(lambda x: entropy(x * mcc_risk_distribution))
+
+# 2. Temporal Risk Aggregation with Decay Factor
+def apply_decay(series, decay=0.95):
+    return series[::-1].expanding().apply(lambda x: np.sum(x * (decay ** np.arange(len(x))[::-1])))[::-1]
+df['temporal_risk_decay'] = apply_decay(df['hct_mer_mcc_baysian_risk'])
+
+# 3. Principal Component Analysis (PCA) on Risk Variables
+risk_features = ['hct_mer_mcc_baysian_risk', 'hct_term_state_baysian_risk', 'ucm_avs_resp_baysian_risk', 'hct_term_country_code_baysian_risk']
+pca = PCA(n_components=2)
+df[['risk_pca_1', 'risk_pca_2']] = pca.fit_transform(df[risk_features])
+
+# 4. Interaction Between High-Risk MCCs and Zero Authorization Mismatches
+df['mcc_zero_auth_interaction'] = df['hct_mer_mcc_baysian_risk'] * df['cnt_za_mis_24hr'] * (df['tran_util'] > 500)
+
+# 5. MCC-Level Anomaly Scores Using Isolation Forest
+isolation_forest = IsolationForest(contamination=0.01, random_state=42)
+df['mcc_anomaly_score'] = isolation_forest.fit_predict(df[risk_features])
+
+# 6. Risk-Weighted MCC Momentum
+def calculate_momentum(series):
+    return series.diff().fillna(0)
+df['risk_mcc_momentum'] = df.groupby('mcc')['hct_mer_mcc_baysian_risk'].transform(calculate_momentum)
+
+# 7. Multi-Level Risk Amplification
+geo_risk_amplification = df['hct_term_country_code_baysian_risk'] * df['hct_term_state_baysian_risk']
+df['multi_level_risk'] = geo_risk_amplification * df['hct_mer_mcc_baysian_risk']
+
+# 8. Risk Amplification with Temporal and Geographical Features
+df['temporal_geo_risk_amplification'] = df['hct_mer_mcc_baysian_risk'] * (df['trxn_hour'] + df['trxn_wkend_ind']) * df['hct_term_country_code_baysian_risk']
+
+# 9. Advanced Rolling Risk Trends
+df['rolling_risk_trend'] = df.groupby('mcc')['hct_mer_mcc_baysian_risk'].transform(lambda x: x.rolling(14).std())
+
+# 10. Dynamic Risk Scoring Based on Peer Groups
+peer_group_mean = df.groupby('mcc')['hct_mer_mcc_baysian_risk'].transform('mean')
+df['dynamic_peer_risk'] = df['hct_mer_mcc_baysian_risk'] / peer_group_mean
+
+# 11. MCC Risk Propagation Across Transactions
+def propagate_risk(series, alpha=0.8):
+    propagated = [series.iloc[0]]
+    for val in series.iloc[1:]:
+        propagated.append(alpha * propagated[-1] + (1 - alpha) * val)
+    return pd.Series(propagated)
+df['mcc_risk_propagation'] = df.groupby('mcc')['hct_mer_mcc_baysian_risk'].transform(propagate_risk)
+
+# 12. High-Risk Transaction Clustering (Density-Based)
+from sklearn.cluster import DBSCAN
+clustering_features = ['hct_mer_mcc_baysian_risk', 'tran_util', 'time_since_last_trxn']
+dbscan = DBSCAN(eps=0.5, min_samples=5)
+df['high_risk_cluster'] = dbscan.fit_predict(df[clustering_features])
+
+# 13. Weighted Risk Trend Deviation
+def trend_deviation(series):
+    mean_trend = series.expanding().mean()
+    return ((series - mean_trend) ** 2).sum()
+df['weighted_trend_deviation'] = df.groupby('mcc')['hct_mer_mcc_baysian_risk'].transform(trend_deviation)
+
+# 14. Nonlinear Risk Interactions Using Polynomial Features
+from sklearn.preprocessing import PolynomialFeatures
+poly = PolynomialFeatures(degree=2, interaction_only=True, include_bias=False)
+nonlinear_features = poly.fit_transform(df[risk_features])
+poly_columns = [f'poly_feature_{i}' for i in range(nonlinear_features.shape[1])]
+df[poly_columns] = nonlinear_features
+
+# 15. Sequential MCC Risk Impact
+def sequential_impact(series):
+    return series.expanding().apply(lambda x: np.prod(x))
+df['sequential_risk_impact'] = df.groupby('mcc')['hct_mer_mcc_baysian_risk'].transform(sequential_impact)
+
+print("Advanced features successfully created!")
+
+
+
+
+
+
+
+
+
+
+
+
+import numpy as np
+import pandas as pd
 
 # Assuming `df` is your DataFrame
 
