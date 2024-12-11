@@ -1,3 +1,119 @@
+# Multi-dimensional risk convergence
+df['multi_dim_risk_convergence'] = (
+    df['hct_mer_mcc_baysian_risk'] +
+    df['hct_term_state_baysian_risk'] +
+    df['ucm_avs_resp_baysian_risk'] +
+    df['hct_term_country_code_baysian_risk']
+) / 4
+
+# Interaction between merchant risk and AVS response
+df['merchant_avs_risk_interaction'] = (
+    df['hct_mer_mcc_baysian_risk'] * df['ucm_avs_resp_baysian_risk']
+)
+
+# Risk-weighted geographic-merchant interaction
+df['geo_merchant_risk_interaction'] = (
+    df['hct_mer_mcc_baysian_risk'] * df['hct_term_state_baysian_risk']
+)
+
+# Quadratic combination of all risk factors
+df['quadratic_risk_interaction'] = (
+    df['hct_mer_mcc_baysian_risk']**2 +
+    df['hct_term_state_baysian_risk']**2 +
+    df['ucm_avs_resp_baysian_risk']**2 +
+    df['hct_term_country_code_baysian_risk']**2
+)
+
+# Weighted mismatch interaction
+df['avs_cvv_risk_mismatch'] = (
+    (df['ucm_avs_resp_baysian_risk'] + df['hct_term_country_code_baysian_risk']) *
+    (df['avs_mismatch_ind'] + df['cvv2_mismatch_ind'])
+)
+
+# Combined country and state risk as one metric
+df['geo_combined_risk'] = (
+    df['hct_term_country_code_baysian_risk'] + df['hct_term_state_baysian_risk']
+)
+
+# Risk-weighted token recurrence behavior
+df['token_recur_risk'] = (
+    df['hct_mer_mcc_baysian_risk'] *
+    (df['token_recur_bill_ind'] + df['recur_bill_ind'])
+)
+
+# Risk-adjusted transaction utility
+df['risk_adj_tran_util'] = (
+    df['hct_mer_mcc_baysian_risk'] * df['tran_util']
+)
+
+# Cross-product of merchant and state risk
+df['merchant_state_risk_cross'] = (
+    df['hct_mer_mcc_baysian_risk'] * df['hct_term_state_baysian_risk']
+)
+
+# Normalized risk spread
+df['risk_spread_normalized'] = (
+    (df['hct_mer_mcc_baysian_risk'] + df['hct_term_state_baysian_risk']) /
+    (df['ucm_avs_resp_baysian_risk'] + df['hct_term_country_code_baysian_risk'] + 1e-6)
+)
+
+# Risk inversion feature
+df['inverse_geo_risk'] = 1 / (df['hct_term_country_code_baysian_risk'] + 1e-6)
+
+# Exponential risk amplification
+df['exp_risk_amplification'] = np.exp(
+    df['hct_mer_mcc_baysian_risk'] + df['ucm_avs_resp_baysian_risk']
+)
+
+# Logarithmic merchant risk
+df['log_merchant_risk'] = np.log1p(df['hct_mer_mcc_baysian_risk'])
+
+# Interaction of risk factors with even-dollar transactions
+df['even_dollar_risk_interaction'] = (
+    df['hct_term_country_code_baysian_risk'] * df['even_dollar_ind']
+)
+
+# Square root risk transformation
+df['sqrt_combined_risk'] = np.sqrt(
+    df['hct_mer_mcc_baysian_risk'] + df['hct_term_country_code_baysian_risk']
+)
+
+# Risk-mismatch divergence
+df['risk_mismatch_divergence'] = np.abs(
+    df['hct_term_state_baysian_risk'] - df['ucm_avs_resp_baysian_risk']
+)
+
+# Risk harmonization feature
+df['harmonic_mean_risk'] = 4 / (
+    1/(df['hct_mer_mcc_baysian_risk'] + 1e-6) +
+    1/(df['hct_term_state_baysian_risk'] + 1e-6) +
+    1/(df['ucm_avs_resp_baysian_risk'] + 1e-6) +
+    1/(df['hct_term_country_code_baysian_risk'] + 1e-6)
+)
+
+# Risk-weighted transaction hour
+df['hour_weighted_risk'] = (
+    df['trxn_hour'] * df['hct_mer_mcc_baysian_risk']
+)
+
+# Weighted average of geo and merchant risks
+df['geo_merchant_weighted_risk'] = (
+    0.6 * df['hct_term_state_baysian_risk'] +
+    0.4 * df['hct_mer_mcc_baysian_risk']
+)
+
+# Ratio of high-risk features
+df['high_risk_ratio'] = (
+    df['hct_mer_mcc_baysian_risk'] /
+    (df['hct_term_country_code_baysian_risk'] + 1e-6)
+)
+
+
+
+
+
+
+
 import numpy as np
 import pandas as pd
 from sklearn.decomposition import PCA
