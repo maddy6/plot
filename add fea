@@ -1,0 +1,147 @@
+1. Risk-Amplified Feature Interactions
+Fraudulent activity often involves specific risk features amplifying one another. This feature captures interaction magnitudes beyond simple addition or multiplication.
+
+Feature: Risk Cross-Amplification Index
+python
+Copy code
+df['risk_cross_amplification'] = (
+    (df['hct_mer_mcc_baysian_risk'] + df['hct_term_country_code_baysian_risk']) *
+    (df['ucm_avs_resp_baysian_risk'] + df['hct_term_state_baysian_risk'])
+)
+Why?
+
+Fraudsters target weak points like specific merchants (hct_mer_mcc) or countries (hct_term_country_code) while exploiting technical gaps like AVS mismatches (ucm_avs_resp).
+Combining these risks amplifies fraud potential when multiple weaknesses overlap.
+How? This feature highlights cases where combined vulnerabilities create hotspots for fraud.
+
+2. Nonlinear Multi-Risk Scaling
+Captures nonlinear dependencies among high-risk features, emphasizing extreme cases where risk scores independently spike.
+
+Feature: Exponential Risk Profile
+python
+Copy code
+df['exp_risk_profile'] = np.exp(
+    (df['hct_mer_mcc_baysian_risk'] + df['hct_term_country_code_baysian_risk'] +
+     df['ucm_avs_resp_baysian_risk'] + df['hct_term_state_baysian_risk']) / 4
+)
+Why? Fraud rarely occurs in linear patterns; instead, risks spike exponentially when combined.
+
+How? By applying an exponential transformation, this feature emphasizes extreme risks while de-emphasizing benign activity.
+
+3. Weighted Behavioral Divergence
+Measures divergence between risk-weighted features and standard behavioral features, surfacing anomalies.
+
+Feature: Risk-Behavior Divergence
+python
+Copy code
+df['risk_behavior_divergence'] = abs(
+    df['hct_mer_mcc_baysian_risk'] - df['cnt_sameamt_auth_6h']
+) / (df['tot_cnt_30min'] + 1)
+Why? Fraudulent activity often deviates from normal behavior, such as performing repeated transactions at high-risk merchants.
+
+How? This feature calculates the gap between risk scores and real-world behavioral patterns, surfacing anomalies when mismatched.
+
+4. Sequential Probability Scores
+Captures cascading risks by modeling sequences across multiple indicators.
+
+Feature: Sequential Risk Cascade
+python
+Copy code
+df['seq_risk_cascade'] = (
+    df['hct_mer_mcc_baysian_risk'] * 
+    df['hct_term_country_code_baysian_risk'] *
+    df['ucm_avs_resp_baysian_risk']
+)
+Why? Fraud often involves "domino effect" risks where multiple vulnerabilities align, like risky merchants and AVS mismatches on international transactions.
+
+How? Sequential multiplication emphasizes cases where risks align in a cascading pattern.
+
+5. Relative Risk Contribution
+Calculates the proportion of risk contributed by each individual feature to the overall profile.
+
+Feature: Risk Contribution Score
+python
+Copy code
+df['risk_contribution_hct_mer_mcc'] = (
+    df['hct_mer_mcc_baysian_risk'] /
+    (df['hct_mer_mcc_baysian_risk'] + df['hct_term_state_baysian_risk'] +
+     df['ucm_avs_resp_baysian_risk'] + df['hct_term_country_code_baysian_risk'] + 1e-6)
+)
+Why? Fraud profiles often revolve around a dominant feature, like a specific merchant type, AVS mismatch, or geographic risk.
+
+How? This feature isolates each risk’s proportional contribution, helping pinpoint the fraud-driving factor.
+
+6. Risk Density Features
+Measures "density" of risk across multiple dimensions to surface high-risk regions.
+
+Feature: Risk Density Score
+python
+Copy code
+df['risk_density'] = (
+    (df['hct_mer_mcc_baysian_risk'] * df['hct_term_country_code_baysian_risk']) /
+    (df['cnt_trxns_60days'] + df['tot_cnt_2hr'] + 1)
+)
+Why? Fraud often involves repeated transactions (dense activity) within high-risk profiles.
+
+How? Risk scores are normalized by transaction counts, highlighting cases with concentrated risk despite normal activity levels.
+
+7. Risk Coherence Index
+Measures coherence between risks, identifying misalignments that could signify fraud.
+
+Feature: Risk Coherence Index
+python
+Copy code
+df['risk_coherence'] = (
+    (df['hct_mer_mcc_baysian_risk'] + df['hct_term_country_code_baysian_risk']) /
+    abs(df['ucm_avs_resp_baysian_risk'] - df['hct_term_state_baysian_risk'] + 1e-6)
+)
+Why? Fraud often exploits gaps in aligned security measures, like geographic risk and AVS mismatches.
+
+How? This feature detects when risks are incoherent (e.g., a risky country but no AVS mismatch), a potential fraud indicator.
+
+8. Cross-Risk Momentum
+Captures "momentum" by comparing risk scores across key features.
+
+Feature: Cross-Risk Momentum
+python
+Copy code
+df['cross_risk_momentum'] = (
+    (df['hct_mer_mcc_baysian_risk'] - df['hct_term_country_code_baysian_risk']) *
+    (df['ucm_avs_resp_baysian_risk'] - df['hct_term_state_baysian_risk'])
+)
+Why? Fraud patterns evolve quickly, often showing rapid changes across correlated risk dimensions.
+
+How? This feature surfaces momentum by detecting mismatched changes in risk.
+
+9. Weighted Risk Overlap
+Quantifies overlapping high-risk features with different weights.
+
+Feature: Weighted Overlap Score
+python
+Copy code
+df['weighted_risk_overlap'] = (
+    0.5 * df['hct_mer_mcc_baysian_risk'] + 
+    0.3 * df['hct_term_country_code_baysian_risk'] +
+    0.2 * df['ucm_avs_resp_baysian_risk']
+)
+Why? Fraudulent transactions often exploit multiple weighted vulnerabilities.
+
+How? By weighting risks, the feature focuses on the most critical contributors.
+
+10. Nonlinear Interactions with Zero-Authorization
+Nonlinear relationships between high-risk scores and zero-authorization mismatches.
+
+Feature: Nonlinear Zero-Auth Interaction
+python
+Copy code
+df['nonlinear_zero_auth'] = np.sqrt(
+    df['cnt_za_mis_24hr'] * df['hct_mer_mcc_baysian_risk']
+)
+Why? Zero-authorization mismatches combined with risky merchants are strong indicators of fraud.
+
+How? Square root transformation emphasizes higher mismatch values while reducing noise.
+
+Why These Features Could Rank High in Feature Importance:
+Complex Relationships: These features go beyond simple arithmetic and linear combinations by modeling nonlinear, hierarchical, or amplified interactions.
+Fraud Patterns: They are tailored to fraud-specific behaviors, such as sequential risks, concentration patterns, and deviations.
+Focus on Key Variables: By emphasizing critical risks (hct_mer_mcc_baysian_risk, etc.), these features align with already proven high-importance indicators.
