@@ -1,3 +1,83 @@
+import numpy as np
+import pandas as pd
+
+# Assuming `df` is your DataFrame
+
+# 1. Risk-Weighted Aggregated Spend by MCC Type
+df['risk_weighted_mcc_spend'] = df.groupby('mcc')['tran_util'].transform(lambda x: (x * df['hct_mer_mcc_baysian_risk']).sum())
+
+# 2. Risk-Weighted MCC Volatility
+df['risk_weighted_mcc_volatility'] = df.groupby('mcc')['tran_util'].transform(lambda x: (x * df['hct_mer_mcc_baysian_risk']).var())
+
+# 3. Risk Interaction with Temporal Trends
+df['risk_temporal_interaction'] = df['hct_mer_mcc_baysian_risk'] * (df['trxn_hour'] + df['trxn_wkend_ind'])
+
+# 4. Cumulative MCC Risk Impact
+df['cumulative_mcc_risk'] = df.groupby('mcc')['hct_mer_mcc_baysian_risk'].transform(lambda x: x.cumsum())
+
+# 5. High-Risk MCC Clusters
+from sklearn.cluster import KMeans
+features = ['hct_mer_mcc_baysian_risk', 'hct_term_state_baysian_risk', 'tran_util']
+kmeans = KMeans(n_clusters=5, random_state=42).fit(df[features])
+df['high_risk_mcc_cluster'] = kmeans.labels_
+
+# 6. Risk-Weighted Peer Comparison
+df['peer_comparison'] = df['tran_util'] / df.groupby('mcc')['tran_util'].transform('mean') * df['hct_mer_mcc_baysian_risk']
+
+# 7. Risk Score Trends for MCCs
+df['rolling_mcc_risk_7d'] = df.groupby('mcc')['hct_mer_mcc_baysian_risk'].transform(lambda x: x.rolling(7).mean())
+df['rolling_mcc_risk_30d'] = df.groupby('mcc')['hct_mer_mcc_baysian_risk'].transform(lambda x: x.rolling(30).mean())
+
+# 8. Risk Amplification with Zero Auth Mismatches
+df['risk_amplification_zero_auth'] = df['hct_mer_mcc_baysian_risk'] * df['cnt_za_mis_24hr']
+
+# 9. Temporal MCC Risk Decay
+df['temporal_mcc_risk_decay'] = df.groupby('mcc')['hct_mer_mcc_baysian_risk'].transform(lambda x: x[::-1].expanding().mean()[::-1])
+
+# 10. Risk-Contributing MCC Groups
+mcc_groups = {'retail': [1, 2, 3], 'hospitality': [4, 5, 6]}  # Example groups
+def get_group_risk(row):
+    for group, mccs in mcc_groups.items():
+        if row['mcc'] in mccs:
+            return df[df['mcc'].isin(mccs)]['hct_mer_mcc_baysian_risk'].sum()
+    return 0
+df['group_risk_contribution'] = df.apply(get_group_risk, axis=1)
+
+# 11. Risk-Weighed Anomalies in Amount Distribution
+mcc_median = df.groupby('mcc')['tran_util'].transform('median')
+df['risk_weighted_anomaly'] = ((df['tran_util'] - mcc_median).abs() / mcc_median) * df['hct_mer_mcc_baysian_risk']
+
+# 12. Normalized Risk Ratios for MCCs
+mcc_mean_risk = df.groupby('mcc')['hct_mer_mcc_baysian_risk'].transform('mean')
+df['normalized_risk_ratio'] = df['hct_mer_mcc_baysian_risk'] / mcc_mean_risk
+
+# 13. Multi-Risk Composite Scores
+df['multi_risk_composite'] = (
+    0.4 * df['hct_mer_mcc_baysian_risk'] +
+    0.3 * df['hct_term_state_baysian_risk'] +
+    0.2 * df['ucm_avs_resp_baysian_risk'] +
+    0.1 * df['hct_term_country_code_baysian_risk']
+)
+
+# 14. High-Risk MCC Burst Patterns
+def detect_burst(series):
+    return ((series.diff() < pd.Timedelta('2 hours')) & (series > series.mean())).sum()
+df['mcc_burst_pattern'] = df.groupby('mcc')['tran_util'].transform(detect_burst)
+
+# 15. Risk Amplification by Geography
+df['risk_geo_amplification'] = df['hct_mer_mcc_baysian_risk'] * df['hct_term_country_code']
+
+print("Features successfully created!")
+
+
+
+
+
+
+
+
+
+
 # Code to generate all 20 features for fraud detection
 
 # Risk-weighted transaction hour feature
