@@ -1,0 +1,161 @@
+1. Dataset Overview
+Metric	Internet Segment	Non-Internet Segments (Combined)	Total (All Segments)
+Transaction Volume (%)	35%	65%	100%
+Fraud Count (%)	80.3%	19.7%	100%
+Fraud Amount (%)	69.5%	30.5%	100%
+Fraud Count (5 months)	5.6 Million	1.2 Million	7.0 Million
+Fraud Count (3 months)	3.0 Million	0.7 Million	3.7 Million
+2. Sampling and Dataset Sizes (5 Months)
+Sampling Ratio	Internet Segment (5 Months)	Non-Internet Segments (5 Months)	Combined Model	Remarks
+1:4	22.4 Million	6.0 Million	28.4 Million	Feasible for non-internet only.
+1:9	56.0 Million	12.0 Million	68.0 Million	Exceeds infrastructure limit.
+1:19	112.0 Million	24.0 Million	136.0 Million	Infeasible under current capacity.
+3. Sampling and Dataset Sizes (3 Months)
+Sampling Ratio	Internet Segment (3 Months)	Non-Internet Segments (3 Months)	Combined Model	Remarks
+1:4	12.0 Million	2.8 Million	14.8 Million	Feasible for both segments.
+1:9	30.0 Million	6.3 Million	36.3 Million	Exceeds combined capacity.
+1:19	60.0 Million	12.6 Million	72.6 Million	Infeasible under current capacity.
+4. Proposed Methodology
+Segment	Fraud Count (3 Months)	Proposed Ratio	Dataset Size	Rationale
+Non-Internet Segments	700,000	1:4	3.5 Million	Efficiently handles fraud while staying within infrastructure limits.
+1:9	6.3 Million	Feasible within 3 months; ensures compliance with MRM sampling guidelines.
+1:19	12.6 Million	High-end ratio is possible with optimization, meeting regulatory requirements.
+Internet Segment	3.0 Million	Advanced Sampling	>30 Million	Requires literature review and innovative sampling techniques; separate model proposed.
+5. Fraud Distributions and Impact
+Metric	Internet Segment	Non-Internet Segments	Remarks
+Fraud Count Share (%)	80.3%	19.7%	Internet dominates fraud patterns, leading to imbalances.
+Fraud Amount Share (%)	69.5%	30.5%	Internet fraud skews fraud amount distribution.
+Transaction Share (%)	35%	65%	Imbalance affects combined model’s performance.
+6. Strategic Rationale for Separate Models
+Aspect	Combined Model Challenges	Separate Models Advantage
+Infrastructure	Exceeds capacity for combined datasets (1:9, 1:19).	Feasible under infrastructure limits.
+Accuracy	Internet data skews fraud patterns for non-internet.	Tailored models improve accuracy for each segment.
+Scalability	Difficult to scale with growing internet transactions.	Modular approach supports future enhancements.
+Compliance (MRM)	Meeting sampling ratios is challenging for combined.	Ensures compliance with required ratios for both models.
+7. Implementation Plan
+Phase	Duration	Scope	Outcome
+Phase 1	3 Months	Non-Internet Model	Fraud detection model for Chip, Wallet, UGAS, etc.
+Phase 2	6 Months	Internet Model	Advanced methodologies for high fraud ratios.
+Phase 3	2 Months	Monitoring and Integration	Real-time monitoring and insights for each segment.
+Conclusion
+Building a separate non-internet fraud detection model ensures computational feasibility and regulatory compliance while maintaining high accuracy for diverse transaction types. The internet fraud model can then be developed with advanced methodologies, leveraging its unique characteristics without impacting the non-internet model's timelines.
+
+This dual-model approach is both practical and scalable, aligning with the bank’s operational and strategic goals.
+
+
+
+
+
+
+
+
+
+
+
+=========================================
+=========================================
+
+
+
+1. Fraud and Transaction Analysis: Internet vs. Non-Internet Segments
+Metric	Internet Segment	Non-Internet Segments	Total	Percentage (Internet)
+Total Transactions	315 million	585 million	900 million	35%
+Total Fraud Cases	5.63 million	1.37 million	7 million	80.3%
+Fraud Amount (in %)	69.5%	30.5%	100%	69.5% of fraud amount
+Fraud Rate	1.79%	0.23%	0.78%	High skew in Internet
+2. Dataset Volume and Sampling Feasibility
+For 5 Months of Data
+Segment	Fraud Cases	1:4 Ratio (Records)	1:9 Ratio (Records)	1:19 Ratio (Records)	Feasible?
+Internet	5.63 million	28.15 million	56.3 million	112.6 million	No (Exceeds Infra)
+Non-Internet	1.37 million	6.85 million	13.7 million	27.4 million	No (Partially)
+For 3 Months of Data
+Segment	Fraud Cases	1:4 Ratio (Records)	1:9 Ratio (Records)	1:19 Ratio (Records)	Feasible?
+Internet	3 million	15 million	30 million	60 million	No
+Non-Internet	700,000	3.5 million	7 million	14 million	Yes
+3. Data Volume Impact on Infrastructure
+Scenario	Total Records Processed	Feasible?	Notes
+5 Months, Combined Model	70 million (1:9 sampling)	No	Exceeds current infrastructure capacity.
+3 Months, Combined Model	37 million (1:9 sampling)	No	Internet skews the dataset volume.
+5 Months, Non-Internet Only	13.7 million (1:9 sampling)	Partially Feasible	Borderline manageable, but still challenging.
+3 Months, Non-Internet Only	7 million (1:9 sampling)	Yes	Optimal for model development.
+4. Fraud Distribution Impact
+Metric	Internet Model	Non-Internet Model	Combined Model	Remarks
+Fraud Count (%)	80.3%	19.7%	100%	Internet fraud dominates combined model.
+Fraud Amount (%)	69.5%	30.5%	100%	Non-Internet fraud underrepresented.
+Volume Skew Impact	High Skew	Balanced	Imbalanced	Internet segment reduces non-internet accuracy.
+5. Justification for Separate Models
+5.1 Business and Analytical Rationale
+Factor	Internet Segment	Non-Internet Segment	Impact on Combined Model
+Fraud Contribution	69.5% of fraud amount	30.5% of fraud amount	Internet dominates, obscuring non-internet trends.
+Transaction Volume	35% of total	65% of total	Leads to imbalanced datasets.
+Fraud Detection Accuracy	Requires advanced techniques	Conventional methods suffice	Combined model sacrifices segment-specific accuracy.
+5.2 Technical Rationale
+Aspect	Internet Segment	Non-Internet Segment	Impact on Combined Model
+Sampling	Needs advanced sampling (e.g., SMOTE-NC)	Feasible with standard 1:4, 1:9, 1:19 ratios	Combined model overly complex and infrastructure-heavy.
+Infrastructure Feasibility	Exceeds limits for 1:9, 1:19 ratios	Fully feasible	Combined approach violates infra constraints.
+Model Development Time	Slower due to complexity	Faster due to simplicity	Combined model delays deployment.
+6. Recommended Approach
+Model	Dataset	Sampling Ratios	Advantages	Challenges
+Internet Fraud Model	5 months	1:4, 1:9, 1:19	Tailored to high fraud rates.	Resource-intensive; requires literature review.
+Non-Internet Fraud Model	3 months	1:4, 1:9, 1:19	Feasible within infra; balanced fraud rates.	None.
+Conclusion
+The proposal to build separate models ensures that:
+
+
+
+
+
+
+
+========================================
+============================================
+
+
+Proposal for Fraud Detection Model Segmentation
+Key Insights
+Metric	Internet Segment	Non-Internet Segments	Total
+Transaction Share	35%	65%	100%
+Fraud Count Share	80.3%	19.7%	100%
+Fraud Amount Share	69.5%	30.5%	100%
+Fraud Count (5 Months)	5.6 Million	1.2 Million	7.0 Million
+Fraud Count (3 Months)	3.0 Million	0.7 Million	3.7 Million
+Why Separate Models?
+Challenges with Combined Model
+Data Imbalance: Internet contributes 80.3% of fraud cases, skewing a combined model, reducing accuracy for non-internet segments.
+Infrastructure Limitation: At a 1:9 ratio, 5-month data leads to 70M+ records, exceeding our capacity.
+Advantages of Separate Models
+Practicality: Allows focusing on non-internet segments with balanced datasets that fit infrastructure limits.
+Compliance: Meets MRM sampling ratios (1:4, 1:9, 1:19) for both segments with adjusted timeframes.
+Accuracy: Reduces noise from internet-dominated data, improving detection across diverse fraud types.
+Sampling Plan
+Segment	Fraud Count (3 Months)	Sampling Ratio	Dataset Size	Remarks
+Non-Internet	700K	1:4	3.5M	Feasible and ensures balanced dataset.
+1:9	6.3M	Fits with optimization.
+1:19	12.6M	Manageable under infra limits.
+Internet	3.0M	Advanced	>30M	Requires innovative sampling methods.
+Impact of Internet Segment
+Fraud Count: 80.3% of frauds concentrated in the internet segment, despite making up only 35% of transactions.
+Fraud Amount: Contributes 69.5% of fraud-related losses, further skewing dataset dynamics.
+Strategic Insight: Addressing internet fraud requires separate methodologies, avoiding adverse impacts on non-internet fraud detection.
+
+Proposed Workflow
+1. Non-Internet Model
+Duration: 3 months.
+Scope: Chip, Wallet, UGAS, Fallback, Manual Keyed.
+Focus: Balanced dataset (1:4, 1:9, 1:19 ratios) for robust fraud detection.
+2. Internet Model
+Duration: 6 months.
+Scope: Internet transactions only.
+Focus: Advanced sampling and tailored techniques for high-fraud-ratio data.
+Visualization: Fraud Dynamics by Segment
+Metric	Internet	Non-Internet
+Conclusion
+Separate Models Enable Scalability: Addresses infrastructure constraints and ensures model compliance.
+Improved Accuracy: Dedicated models for distinct fraud behaviors optimize performance.
+Strategic Insight: Tailored methodologies provide a stronger defense against fraud for both internet and non-internet segments.
+
+
+
+Non-Internet Model is computationally feasible and effective across required sampling ratios.
+Internet Model can use specialized methods to address high fraud concentration, avoiding skewed insights.
+This modular approach balances resource optimization, compliance, and accuracy, ensuring robust fraud detection for all segments.
